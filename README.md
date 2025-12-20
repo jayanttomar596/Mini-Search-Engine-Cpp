@@ -122,7 +122,7 @@ Mini_Search_Engine_C++/
 
 ### 🔧 Backend Setup
 
-```bash
+```
 cd backend
 g++ -std=c++20 server.cpp src/SearchEngine.cpp src/Trie.cpp -I include -o server
 ./server
@@ -138,7 +138,7 @@ Open in browser:
 
 http://localhost:5500
 
-
+```
 
 🧪 Example Queries
 Exact Search
