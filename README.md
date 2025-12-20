@@ -141,12 +141,7 @@ Open in browser:
 
 http://localhost:5500
 
-🔍 API Endpoints
-Exact Search
-GET /search?q=<word>
 
-Autocomplete
-GET /autocomplete?prefix=<text>
 
 🧪 Example Queries
 Exact Search
