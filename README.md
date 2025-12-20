@@ -140,6 +140,9 @@ http://localhost:5500
 
 ```
 
+---
+
+
 🧪 Example Queries
 Exact Search
 search
@@ -149,6 +152,8 @@ inverted
 Autocomplete
 se → search, searching, search engine
 in → inverted, indexing, information
+
+---
 
 ⏱️ Time Complexity
 Operation	Complexity
@@ -171,6 +176,8 @@ REST API Design
 
 Frontend–Backend Integration
 
+---
+
 📌 Future Enhancements
 
 Phrase search ("search engine")
@@ -182,6 +189,9 @@ Snippet generation using offsets
 Fuzzy search (typo tolerance)
 
 Persistent disk-based index
+
+
+---
 
 
 
