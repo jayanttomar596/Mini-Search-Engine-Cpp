@@ -60,7 +60,10 @@ Search Engine Core
 
 
 
-## 📁 Project Structure
+📁 Project Structure
+
+
+```
 
 Mini_Search_Engine_C++/
 │
@@ -86,7 +89,7 @@ Mini_Search_Engine_C++/
 ├── doc2.txt
 └── doc3.txt
 
-
+```
 
 
 
