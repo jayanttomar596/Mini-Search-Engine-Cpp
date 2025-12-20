@@ -42,7 +42,7 @@ int main() {
     engine.addDocument("../documents/doc2.txt");
     engine.addDocument("../documents/doc3.txt"); 
 
-    engine.buildIndex();   // 🔥 INDEX BUILT ONCE
+    engine.buildIndex();   //  INDEX BUILT ONCE
 
     httplib::Server server;
 
