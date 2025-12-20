@@ -47,20 +47,14 @@ All documents are indexed once, and subsequent searches are performed in near co
 
 ## 🏗️ System Architecture
 
-User (Browser)
-|
-| HTTP Requests
-v
-Frontend (HTML / CSS / JS)
-|
-| REST API
-v
-C++ Backend Server
-|
-v
+User (Browser)<br>
+↓ HTTP Requests<br>
+Frontend (HTML / CSS / JS)<br>
+↓ REST API<br>
+C++ Backend Server<br>
+↓<br>
 Search Engine Core
-├── Inverted Index (Fast Exact Search)
-└── Trie (Autocomplete)
+
 
 
 
