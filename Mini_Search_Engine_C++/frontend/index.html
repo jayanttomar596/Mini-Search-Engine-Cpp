@@ -1,19 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Mini Search Engine</title>
+  <title>Dynamic Mini Search Engine</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h2>Mini Search Engine</h2>
+<div class="container">
 
-<input id="query" placeholder="Search word">
-<div id="suggestions"></div>
+  <h1>⚡ Dynamic Mini Search Engine</h1>
 
-<button onclick="search()">Search</button>
+  <!-- Upload Section -->
+  <div class="upload-box">
+    <h3>Upload Document (.txt)</h3>
+    <input type="file" id="fileInput" accept=".txt">
+    <button onclick="uploadFile()">Upload</button>
+    <p id="uploadStatus"></p>
+  </div>
 
-<div id="output"></div>
+  <!-- Search Section -->
+  <div class="search-box">
+    <input id="query" placeholder="Type to search..." autocomplete="off">
+    <div id="suggestions"></div>
+    <button onclick="search()">Search</button>
+  </div>
+
+  <div id="output"></div>
+
+</div>
 
 <script src="script.js"></script>
 </body>
