@@ -1,0 +1,16 @@
+Building a mini search engine is a great way to understand core concepts
+of data structures and algorithms.
+
+A search engine typically has two phases indexing and querying.
+During indexing documents are processed and stored in data structures
+such as inverted indexes and tries.
+
+During querying the engine retrieves results in near constant time.
+This is achieved by avoiding full document scans.
+
+Autocomplete search suggestions improve usability and efficiency.
+Trie structures are ideal for implementing such features.
+Understanding these concepts is essential for backend and system design roles.
+
+
+Search is a fundamental operation in information retrieval.
