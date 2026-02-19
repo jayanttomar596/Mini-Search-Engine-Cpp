@@ -161,7 +161,6 @@ void SearchEngine::indexDocument(int docID, const string& content) {
 
 
 
-// BM25 Indexing 
 
 double computeBM25(
     int tf,
