@@ -7,6 +7,86 @@
 
 using namespace std;
 
+
+
+
+
+
+// ---------------- EDIT DISTANCE (LEVENSHTEIN) ----------------
+int editDistance(const string& a, const string& b) {
+
+    int n = a.size();
+    int m = b.size();
+
+    vector<vector<int>> dp(n + 1, vector<int>(m + 1));
+
+    for (int i = 0; i <= n; i++)
+        dp[i][0] = i;
+
+    for (int j = 0; j <= m; j++)
+        dp[0][j] = j;
+
+    for (int i = 1; i <= n; i++) {
+        for (int j = 1; j <= m; j++) {
+
+            if (a[i - 1] == b[j - 1])
+                dp[i][j] = dp[i - 1][j - 1];
+            else {
+                dp[i][j] = 1 + min({
+                    dp[i - 1][j],     // delete
+                    dp[i][j - 1],     // insert
+                    dp[i - 1][j - 1]  // replace
+                });
+            }
+        }
+    }
+
+    return dp[n][m];
+}
+
+
+
+
+
+
+// ---------------- SPELL CORRECTION ----------------
+string correctWord(
+    const string& queryWord,
+    const unordered_map<string,
+    unordered_map<int, Posting>>& index
+){
+    string bestWord = queryWord;
+    int bestDist = INT_MAX;
+    int bestDF = -1;
+
+    for(const auto& [word, postingMap] : index){
+
+        int dist = editDistance(queryWord, word);
+
+        if(dist < bestDist){
+            bestDist = dist;
+            bestWord = word;
+            bestDF = postingMap.size();
+        }
+        else if(dist == bestDist){
+            int df = postingMap.size();
+
+            if(df > bestDF){
+                bestWord = word;
+                bestDF = df;
+            }
+        }
+    }
+
+    return bestWord;
+}
+
+
+
+
+
+
+
 // ---------------- NORMALIZE ----------------
 static string normalize(const string& word) {
     string clean;
@@ -196,6 +276,23 @@ vector<SearchResult> SearchEngine::searchAPI(const string& query) {
     vector<SearchResult> results;
     vector<string> terms = splitQuery(query);
 
+
+    string suggestedWord = "";
+
+    for (string& term : terms) {
+        if (invertedIndex.find(term) == invertedIndex.end()) {
+
+            string corrected = correctWord(term, invertedIndex);
+
+            if(corrected != term)
+                suggestedWord = corrected;
+
+            term = corrected;
+        }
+    }
+
+
+
     if (terms.empty()) return results;
 
     unordered_map<int, int> docPresence;
@@ -223,9 +320,10 @@ vector<SearchResult> SearchEngine::searchAPI(const string& query) {
 
         SearchResult res;
         res.document = documents[docID];
+        res.suggestion = suggestedWord;
+
 
         string& content = documentContents[docID];
-
 
 
 

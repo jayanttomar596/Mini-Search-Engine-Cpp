@@ -30,6 +30,7 @@ string toJson(const vector<SearchResult>& results) {
 
         json += "{";
         json += "\"document\":\"" + r.document + "\",";
+        json += "\"suggestion\":\"" + r.suggestion + "\",";
         json += "\"frequency\":" + to_string(r.frequency) + ",";
         json += "\"score\":" + to_string(r.score) + ",";
 

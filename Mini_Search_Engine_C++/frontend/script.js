@@ -97,6 +97,18 @@ function search() {
         return;
       }
 
+      if(data.results[0].suggestion){
+        output.innerHTML += `
+          <p style="color:#facc15">
+            Did you mean:
+            <b onclick="query.value='${data.results[0].suggestion}'; search()">
+              ${data.results[0].suggestion}
+            </b> ?
+          </p>
+        `;
+      }
+
+
       data.results.forEach(r => {
         const card = document.createElement("div");
         card.className = "result-card";

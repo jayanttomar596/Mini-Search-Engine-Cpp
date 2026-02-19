@@ -21,6 +21,7 @@ struct SearchResult {
     vector<long long> offsets;
     string snippet;   // NEW
     double score = 0.0;   // ⭐ TF-IDF SCORE
+    string suggestion;
 };
 
 
