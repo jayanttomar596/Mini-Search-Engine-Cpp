@@ -18,3 +18,12 @@ Query optimization techniques help improve performance and reduce response time.
 
 Snippet generation is an important feature of search systems.
 It provides users with contextual previews of matched query terms within documents.
+
+
+
+search
+version-2.0
+node.js
+std::vector
+3.14
+c++

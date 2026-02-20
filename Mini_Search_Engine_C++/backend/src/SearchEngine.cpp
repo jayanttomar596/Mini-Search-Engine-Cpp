@@ -88,6 +88,9 @@ string correctWord(
 
 
 // ---------------- NORMALIZE ----------------
+
+// ------- OLD Normalize Function
+/*
 static string normalize(const string& word) {
     string clean;
     for (char c : word)
@@ -95,6 +98,50 @@ static string normalize(const string& word) {
             clean += tolower(c);
     return clean;
 }
+*/
+
+// ------- NEW Normalize Function
+static string normalize(const string& word) {
+
+    string clean;
+
+    auto isAllowedSpecial = [](char c) {
+        return c == '+' || c == '#' || c == '.' ||
+               c == '-' || c == '_' || c == ':';
+    };
+
+    for (size_t i = 0; i < word.size(); i++) {
+
+        char c = word[i];
+
+        if (isalnum(static_cast<unsigned char>(c))) {
+            clean += tolower(c);
+        }
+        else if (isAllowedSpecial(c)) {
+
+            if (!clean.empty()) {
+                clean += c;
+            }
+        }
+    }
+
+    // Remove trailing specials
+    while (!clean.empty() &&
+           !isalnum(static_cast<unsigned char>(clean.back()))) {
+        clean.pop_back();
+    }
+
+    if (!clean.empty() &&
+        !isalnum(static_cast<unsigned char>(clean.front()))) {
+        clean.clear();
+    }
+
+    return clean;
+}
+
+
+
+
 
 // ---------------- SPLIT QUERY ----------------
 static vector<string> splitQuery(const string& query) {
