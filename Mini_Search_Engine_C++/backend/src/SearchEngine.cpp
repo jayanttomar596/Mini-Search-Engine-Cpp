@@ -91,7 +91,7 @@ string correctWord(
 static string normalize(const string& word) {
     string clean;
     for (char c : word)
-        if (isalpha(static_cast<unsigned char>(c)))
+        if (isalnum(static_cast<unsigned char>(c))) // isalpha -> isalnum
             clean += tolower(c);
     return clean;
 }
