@@ -74,8 +74,15 @@ int main() {
             return;
         }
 
-        static int fileCounter = 1;
-        string docName = "uploaded_doc_" + to_string(fileCounter++) + ".txt";
+        // static int fileCounter = 1;
+        // string docName = "uploaded_doc_" + to_string(fileCounter++) + ".txt";
+
+        if (!req.has_param("filename")) {
+            res.set_content("Missing filename", "text/plain");
+            return;
+        }
+
+        string docName = req.get_param_value("filename");
 
         engine.addDocumentContent(docName, req.body);
 

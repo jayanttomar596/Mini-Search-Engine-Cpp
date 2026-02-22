@@ -18,13 +18,13 @@ function uploadFile() {
   const reader = new FileReader();
 
   reader.onload = function (e) {
-    fetch("http://localhost:8080/upload", {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain"
-      },
-      body: e.target.result
-    })
+      fetch("http://localhost:8080/upload?filename=" + encodeURIComponent(file.name), {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain"
+        },
+        body: e.target.result
+      })
       .then(res => {
         if (!res.ok) {
           throw new Error("Server error");
@@ -170,7 +170,7 @@ input.addEventListener("input", () => {
 
 
 
-function loadSample() {
+function loadInitialCorpus() {
   fetch("http://localhost:8080/loadSample")
     .then(res => res.text())
     .then(msg => {

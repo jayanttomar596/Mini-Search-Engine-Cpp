@@ -8,7 +8,8 @@
 #include <thread>
 #include <vector>
 #include <algorithm>
-
+#include <filesystem>
+namespace fs = std::filesystem;
 using namespace std;
 
 
@@ -225,6 +226,7 @@ void SearchEngine::addDocument(const string& path) {
 
 
 // ---------------- ADD DOCUMENT CONTENT ----------------
+/*
 void SearchEngine::addDocumentContent(const string& name, const string& content) {
 
     if (usingSample)
@@ -235,11 +237,60 @@ void SearchEngine::addDocumentContent(const string& name, const string& content)
 
     documentContents[docID] = content;
 
-    // ❌ REMOVE this:
-    // indexDocument(docID, content);
+    indexDocument(docID, content);
 
-    // Instead:
-    buildIndex();
+    
+
+    // buildIndex();
+}
+*/
+
+void SearchEngine::addDocumentContent(const string& name, const string& content) {
+
+    string finalName = name;
+
+    // 🔹 Handle duplicate filenames
+    auto nameExists = [&](const string& checkName) {
+        return find(documents.begin(), documents.end(), checkName) != documents.end();
+    };
+
+    if (nameExists(finalName)) {
+
+        size_t dotPos = name.find_last_of('.');
+        string base = (dotPos == string::npos) ? name : name.substr(0, dotPos);
+        string ext  = (dotPos == string::npos) ? ""   : name.substr(dotPos);
+
+        int counter = 1;
+        while (nameExists(finalName)) {
+            finalName = base + "(" + to_string(counter++) + ")" + ext;
+        }
+    }
+
+    documents.push_back(finalName);
+    int docID = documents.size() - 1;
+
+    documentContents[docID] = content;
+
+    // 🔹 Track vocabulary size before indexing
+    size_t oldVocabSize = invertedIndex.size();
+
+    // Incremental indexing
+    indexDocument(docID, content);
+
+    // 🔹 Update average document length
+    double total = 0;
+    for (auto& p : documentLength)
+        total += p.second;
+
+    if (!documentLength.empty())
+        avgDocLength = total / documentLength.size();
+
+    // 🔹 Insert only new words into Trie
+    if (invertedIndex.size() > oldVocabSize) {
+        for (auto& [word, postingMap] : invertedIndex) {
+            trie.insert(word);
+        }
+    }
 }
 
 
@@ -283,6 +334,7 @@ void SearchEngine::buildIndex() {
     // Per-thread local structures
     vector<unordered_map<string, unordered_map<int, Posting>>> localIndexes(numThreads);
     vector<unordered_map<int, int>> localDocLengths(numThreads);
+    vector<unordered_map<int, string>> localContents(numThreads); // New
 
     for (unsigned int t = 0; t < numThreads; t++) {
 
@@ -311,7 +363,8 @@ void SearchEngine::buildIndex() {
                 string content = buffer.str();
 
                 // Safe: each docID handled by exactly one thread
-                documentContents[docID] = content;
+                // documentContents[docID] = content;
+                localContents[t][docID] = content;
 
                 indexDocumentLocal(
                     docID,
@@ -329,6 +382,11 @@ void SearchEngine::buildIndex() {
 
     // ---------------- MERGE PHASE ----------------
     for (unsigned int t = 0; t < threads.size(); t++) {
+
+        // 🔥 Merge document contents first
+        for (auto& [docID, content] : localContents[t]) {
+            documentContents[docID] = content;
+        }
 
         for (auto& [word, postingMap] : localIndexes[t]) {
 
@@ -659,28 +717,32 @@ void SearchEngine::clearIndex() {
 }
 
 // ---------------- LOAD SAMPLE ----------------
-void SearchEngine::loadSampleDataset() {
+#include <filesystem>
 
-    if (usingSample) return;
+void SearchEngine::loadSampleDataset() {
 
     clearIndex();
 
-    vector<string> sampleDocs = {
-        "../documents/doc1.txt",
-        "../documents/doc2.txt",
-        "../documents/doc3.txt"
-    };
+    namespace fs = std::filesystem;
 
-    for (auto& path : sampleDocs) {
+    string folderPath = "../documents";
 
-        ifstream file(path);
-        if (!file) continue;
+    for (const auto& entry : fs::directory_iterator(folderPath)) {
 
-        stringstream buffer;
-        buffer << file.rdbuf();
+        if (entry.is_regular_file() &&
+            entry.path().extension() == ".txt") {
 
-        addDocumentContent(path, buffer.str());
+            documents.push_back(entry.path().string());
+        }
     }
+
+    if (documents.empty()) {
+        cout << "No .txt files found in documents folder\n";
+        return;
+    }
+
+    // 🔥 Batch multithreaded build
+    buildIndex();
 
     usingSample = true;
 }
