@@ -52,6 +52,16 @@ private:
     bool usingSample = false;
 
     void indexDocument(int docID, const string& content);
+
+
+    // 🔥 NEW: Thread-safe local indexing helper
+    void indexDocumentLocal(
+        int docID,
+        const string& content,
+        unordered_map<string, unordered_map<int, Posting>>& localIndex,
+        unordered_map<int, int>& localDocLength
+    );       
+    
 };
 
 #endif

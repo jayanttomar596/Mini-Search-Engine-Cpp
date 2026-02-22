@@ -1,9 +1,13 @@
 #include "SearchEngine.h"
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <cctype>
 #include <algorithm>
 #include <cmath>
+#include <thread>
+#include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -230,10 +234,18 @@ void SearchEngine::addDocumentContent(const string& name, const string& content)
     int docID = documents.size() - 1;
 
     documentContents[docID] = content;
-    indexDocument(docID, content);
+
+    // ❌ REMOVE this:
+    // indexDocument(docID, content);
+
+    // Instead:
+    buildIndex();
 }
 
+
+
 // ---------------- BUILD INDEX ----------------
+/*
 void SearchEngine::buildIndex() {
 
     for (int docID = 0; docID < documents.size(); docID++) {
@@ -248,6 +260,109 @@ void SearchEngine::buildIndex() {
         indexDocument(docID, buffer.str());
     }
 }
+*/
+
+
+// ---- New BuildIndex for Threading 
+void SearchEngine::buildIndex() {
+    // just to check whether this function is called or not 
+    // std::cout << "buildIndex() called\n";
+
+
+    int totalDocs = documents.size();
+    if (totalDocs == 0) return;
+
+    // Decide number of threads
+    unsigned int numThreads = thread::hardware_concurrency();
+    if (numThreads == 0) numThreads = 4;
+
+    int chunkSize = (totalDocs + numThreads - 1) / numThreads;
+
+    vector<thread> threads;
+
+    // Per-thread local structures
+    vector<unordered_map<string, unordered_map<int, Posting>>> localIndexes(numThreads);
+    vector<unordered_map<int, int>> localDocLengths(numThreads);
+
+    for (unsigned int t = 0; t < numThreads; t++) {
+
+        int start = t * chunkSize;
+        int end = min(start + chunkSize, totalDocs);
+
+        if (start >= totalDocs) break;
+
+        threads.emplace_back([&, t, start, end]() {
+            // To check threads are working or not you may comment if you dont like it 
+            cout << "Thread Index: " << t
+            << " | System Thread ID: "
+            << this_thread::get_id()
+            << " | Processing Docs: "
+            << start << " to " << end - 1
+            << endl;
+
+            for (int docID = start; docID < end; docID++) {
+
+                ifstream file(documents[docID]);
+                if (!file) continue;
+
+                stringstream buffer;
+                buffer << file.rdbuf();
+
+                string content = buffer.str();
+
+                // Safe: each docID handled by exactly one thread
+                documentContents[docID] = content;
+
+                indexDocumentLocal(
+                    docID,
+                    content,
+                    localIndexes[t],
+                    localDocLengths[t]
+                );
+            }
+        });
+    }
+
+    // Wait for all threads
+    for (auto& th : threads)
+        th.join();
+
+    // ---------------- MERGE PHASE ----------------
+    for (unsigned int t = 0; t < threads.size(); t++) {
+
+        for (auto& [word, postingMap] : localIndexes[t]) {
+
+            auto& globalPostingMap = invertedIndex[word];
+
+            for (auto& [docID, posting] : postingMap) {
+                globalPostingMap[docID] = posting;
+            }
+        }
+
+        for (auto& [docID, length] : localDocLengths[t]) {
+            documentLength[docID] = length;
+        }
+    }
+
+    // Recompute average document length
+    double totalLength = 0;
+    for (auto& [docID, length] : documentLength)
+        totalLength += length;
+
+    avgDocLength = totalLength / documentLength.size();
+
+    // Rebuild Trie after merge
+    trie = Trie();
+    for (auto& [word, _] : invertedIndex)
+        trie.insert(word);
+
+}
+
+
+
+
+
+
 
 // ---------------- INDEX DOCUMENT ----------------
 void SearchEngine::indexDocument(int docID, const string& content) {
@@ -283,6 +398,43 @@ void SearchEngine::indexDocument(int docID, const string& content) {
     avgDocLength = total / documentLength.size();
 
 }
+
+
+
+
+
+
+
+// Local Indexing Function for Multithreading 
+
+void SearchEngine::indexDocumentLocal(
+    int docID,
+    const string& content,
+    unordered_map<string, unordered_map<int, Posting>>& localIndex,
+    unordered_map<int, int>& localDocLength
+) {
+    stringstream ss(content);
+    string word;
+    int position = 0;
+    long long offset = 0;
+
+    while (ss >> word) {
+
+        string clean = normalize(word);
+        if (clean.empty()) continue;
+
+        auto& posting = localIndex[clean][docID];
+        posting.frequency++;
+        posting.positions.push_back(position);
+        posting.offsets.push_back(offset);
+
+        offset += word.length() + 1;
+        position++;
+    }
+
+    localDocLength[docID] = position;
+}
+
 
 
 
