@@ -17,6 +17,18 @@ using namespace std;
 
 
 
+int SearchEngine::getDocumentCount() const {
+    return documents.size();
+}
+
+int SearchEngine::getVocabularySize() const {
+    return invertedIndex.size();
+}
+
+
+
+
+
 // ---------------- EDIT DISTANCE (LEVENSHTEIN) ----------------
 int editDistance(const string& a, const string& b) {
 
@@ -318,6 +330,12 @@ void SearchEngine::buildIndex() {
 void SearchEngine::buildIndex() {
     // just to check whether this function is called or not 
     // std::cout << "buildIndex() called\n";
+
+    invertedIndex.clear();
+    documentLength.clear();
+    documentContents.clear();
+    avgDocLength = 0.0;
+    trie = Trie();
 
 
     int totalDocs = documents.size();
@@ -709,19 +727,25 @@ vector<string> SearchEngine::autocompleteAPI(const string& prefix) {
 
 // ---------------- CLEAR INDEX ----------------
 void SearchEngine::clearIndex() {
+
     documents.clear();
     invertedIndex.clear();
     documentContents.clear();
+    documentLength.clear();   // 🔥 MISSING BEFORE
+    avgDocLength = 0.0;       // 🔥 RESET THIS TOO
+
     trie = Trie();
+
     usingSample = false;
 }
 
+
+
 // ---------------- LOAD SAMPLE ----------------
-#include <filesystem>
 
 void SearchEngine::loadSampleDataset() {
 
-    clearIndex();
+    clearIndex();   // 🔥 Always reset
 
     namespace fs = std::filesystem;
 
@@ -741,8 +765,5 @@ void SearchEngine::loadSampleDataset() {
         return;
     }
 
-    // 🔥 Batch multithreaded build
-    buildIndex();
-
-    usingSample = true;
+    buildIndex();  // multithreaded
 }

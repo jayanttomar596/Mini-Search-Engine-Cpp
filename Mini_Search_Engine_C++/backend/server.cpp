@@ -141,6 +141,44 @@ int main() {
         res.set_content(json, "application/json");
     });
 
+
+
+    // -------- Corpus Info Endpoint --------
+    server.Get("/corpusInfo", [&](const httplib::Request& req,
+                                httplib::Response& res) {
+
+        string json = "{";
+        json += "\"documents\":" + to_string(engine.getDocumentCount()) + ",";
+        json += "\"vocabulary\":" + to_string(engine.getVocabularySize());
+        json += "}";
+
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_content(json, "application/json");
+    });
+
+
+    // -------- Clear Corpus --------
+    server.Post("/clearCorpus", [&](const httplib::Request& req,
+                                    httplib::Response& res) {
+
+        engine.clearIndex();
+
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_content("Corpus cleared successfully", "text/plain");
+    });
+
+
+    // -------- Rebuild Index --------
+    server.Post("/rebuildIndex", [&](const httplib::Request& req,
+                                    httplib::Response& res) {
+
+        engine.buildIndex();
+
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_content("Index rebuilt successfully", "text/plain");
+    });
+
+
     cout << "Dynamic Search Engine running at http://localhost:8080\n";
     server.listen("localhost", 8080);
 }

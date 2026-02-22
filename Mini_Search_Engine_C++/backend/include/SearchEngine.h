@@ -29,6 +29,8 @@ class SearchEngine {
 public:
     // Add document from file path
     void addDocument(const string& path);
+    int getDocumentCount() const;
+    int getVocabularySize() const;
 
     // NEW: Add document directly from content
     void addDocumentContent(const string& name, const string& content);

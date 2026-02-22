@@ -35,6 +35,8 @@ function uploadFile() {
         uploadStatus.innerText = msg;
         uploadStatus.style.color = "#22c55e"; // green
         fileInput.value = "";
+        // Refresh corpus stats after upload
+        updateCorpusInfo();
       })
       .catch(err => {
         console.error("Upload error:", err);
@@ -170,13 +172,61 @@ input.addEventListener("input", () => {
 
 
 
+
+
+function updateCorpusInfo() {
+  fetch("http://localhost:8080/corpusInfo")
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("corpusStats").innerText =
+        `Documents: ${data.documents} | Vocabulary: ${data.vocabulary}`;
+    });
+}
+
+
+
 function loadInitialCorpus() {
+
+  if (!confirm("This will replace the current corpus. Continue?")) {
+    return;
+  }
+
   fetch("http://localhost:8080/loadSample")
     .then(res => res.text())
     .then(msg => {
       alert(msg);
+      updateCorpusInfo();
+    })
+    .catch(err => {
+      console.error("Load error:", err);
     });
 }
+
+
+
+function rebuildIndex() {
+  fetch("http://localhost:8080/rebuildIndex", { method: "POST" })
+    .then(res => res.text())
+    .then(msg => {
+      alert(msg);
+      updateCorpusInfo();
+    });
+}
+
+
+
+function clearCorpus() {
+  fetch("http://localhost:8080/clearCorpus", { method: "POST" })
+    .then(res => res.text())
+    .then(msg => {
+      alert(msg);
+      document.querySelector("button[onclick='loadInitialCorpus()']").disabled = false;
+      updateCorpusInfo();
+    });
+}
+
+
+window.onload = updateCorpusInfo;
 
 
 
