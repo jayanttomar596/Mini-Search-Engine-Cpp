@@ -9,6 +9,7 @@
 #include <vector>
 #include <algorithm>
 #include <filesystem>
+#include <chrono>
 namespace fs = std::filesystem;
 using namespace std;
 
@@ -331,6 +332,8 @@ void SearchEngine::buildIndex() {
     // just to check whether this function is called or not 
     // std::cout << "buildIndex() called\n";
 
+    auto start = std::chrono::high_resolution_clock::now(); // To track time
+
     invertedIndex.clear();
     documentLength.clear();
     documentContents.clear();
@@ -344,6 +347,7 @@ void SearchEngine::buildIndex() {
     // Decide number of threads
     unsigned int numThreads = thread::hardware_concurrency();
     if (numThreads == 0) numThreads = 4;
+    numThreads = min(numThreads, (unsigned int)totalDocs);
 
     int chunkSize = (totalDocs + numThreads - 1) / numThreads;
 
@@ -431,6 +435,20 @@ void SearchEngine::buildIndex() {
     trie = Trie();
     for (auto& [word, _] : invertedIndex)
         trie.insert(word);
+    
+    auto end = std::chrono::high_resolution_clock::now();
+
+    lastIndexingTimeMs =
+        std::chrono::duration<double, std::milli>(end - start).count();
+
+    lastThreadCount = threads.size();
+
+    cout << "Index built in "
+        << lastIndexingTimeMs
+        << " ms using "
+        << lastThreadCount
+        << " threads."
+        << endl;
 
 }
 
@@ -767,3 +785,15 @@ void SearchEngine::loadSampleDataset() {
 
     buildIndex();  // multithreaded
 }
+
+
+
+double SearchEngine::getLastIndexingTime() const {
+    return lastIndexingTimeMs;
+}
+
+int SearchEngine::getLastThreadCount() const {
+    return lastThreadCount;
+}
+
+

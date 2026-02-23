@@ -43,9 +43,14 @@ public:
     vector<SearchResult> searchAPI(const string& word);
     vector<string> autocompleteAPI(const string& prefix);
 
+    double getLastIndexingTime() const;
+    int getLastThreadCount() const;
+
 private:
     vector<string> documents;
     unordered_map<int,int> documentLength;
+    double lastIndexingTimeMs = 0.0;
+    int lastThreadCount = 0;
     double avgDocLength = 0.0;
 
     unordered_map<string, unordered_map<int, Posting>> invertedIndex;

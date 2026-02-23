@@ -94,12 +94,19 @@ int main() {
 
     // -------- Load Sample Dataset --------
     server.Get("/loadSample", [&](const httplib::Request& req,
-                                httplib::Response& res) {
+                              httplib::Response& res) {
 
         engine.loadSampleDataset();
 
+        string json = "{";
+        json += "\"indexing_time_ms\":" +
+                to_string(engine.getLastIndexingTime()) + ",";
+        json += "\"threads_used\":" +
+                to_string(engine.getLastThreadCount());
+        json += "}";
+
         res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_content("Sample dataset loaded", "text/plain");
+        res.set_content(json, "application/json");
     });
 
 
@@ -190,12 +197,19 @@ int main() {
 
     // -------- Rebuild Index --------
     server.Post("/rebuildIndex", [&](const httplib::Request& req,
-                                    httplib::Response& res) {
+                                 httplib::Response& res) {
 
         engine.buildIndex();
 
+        string json = "{";
+        json += "\"indexing_time_ms\":" +
+                to_string(engine.getLastIndexingTime()) + ",";
+        json += "\"threads_used\":" +
+                to_string(engine.getLastThreadCount());
+        json += "}";
+
         res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_content("Index rebuilt successfully", "text/plain");
+        res.set_content(json, "application/json");
     });
 
 
