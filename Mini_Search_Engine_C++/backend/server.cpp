@@ -1,6 +1,7 @@
 #include "httplib.h"
 #include "SearchEngine.h"
 #include <iostream>
+#include <chrono>   
 
 using namespace std;
 
@@ -104,7 +105,7 @@ int main() {
 
     // -------- Search Endpoint --------
     server.Get("/search", [&](const httplib::Request& req,
-                              httplib::Response& res) {
+                            httplib::Response& res) {
 
         if (!req.has_param("q")) {
             res.set_content("Missing query", "text/plain");
@@ -112,12 +113,31 @@ int main() {
         }
 
         auto q = req.get_param_value("q");
+
+        // Start timer
+        auto start = std::chrono::high_resolution_clock::now();
+
         auto results = engine.searchAPI(q);
 
+        // End timer
+        auto end = std::chrono::high_resolution_clock::now();
+
+        double latency =
+            std::chrono::duration<double, std::milli>(end - start).count();
+
+        // Build JSON
+        string resultsJson = toJson(results);
+
+        // Inject latency into JSON
+        string finalJson = "{";
+        finalJson += "\"latency_ms\":" + to_string(latency) + ",";
+        finalJson += resultsJson.substr(1); // remove first '{'
+
         res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_content(toJson(results), "application/json");
+        res.set_content(finalJson, "application/json");
     });
 
+    
     // -------- Autocomplete Endpoint --------
     server.Get("/autocomplete", [&](const httplib::Request& req,
                                     httplib::Response& res) {

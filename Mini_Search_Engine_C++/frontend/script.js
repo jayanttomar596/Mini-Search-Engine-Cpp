@@ -92,7 +92,11 @@ function search() {
       return res.json();
     })
     .then(data => {
-      output.innerHTML = "";
+      output.innerHTML = `
+      <p style="color:#94a3b8">
+        Search time: <b>${data.latency_ms.toFixed(3)} ms</b>
+      </p>
+    `;
 
       if (!data.results || data.results.length === 0) {
         output.innerHTML = "<p class='no-result'>No results found</p>";
