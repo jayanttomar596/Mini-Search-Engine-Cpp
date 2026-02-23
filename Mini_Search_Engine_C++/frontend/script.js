@@ -198,9 +198,10 @@ function loadInitialCorpus() {
   fetch("http://localhost:8080/loadSample")
     .then(res => res.json())
     .then(data => {
-      alert(
-        `Index built in ${data.indexing_time_ms.toFixed(3)} ms using ${data.threads_used} threads`
-      );
+
+      document.getElementById("indexStats").innerText =
+        `Index built in ${data.indexing_time_ms.toFixed(3)} ms using ${data.threads_used} threads`;
+
       updateCorpusInfo();
     })
     .catch(err => {
@@ -214,9 +215,10 @@ function rebuildIndex() {
   fetch("http://localhost:8080/rebuildIndex", { method: "POST" })
     .then(res => res.json())
     .then(data => {
-      alert(
-        `Index rebuilt in ${data.indexing_time_ms.toFixed(3)} ms using ${data.threads_used} threads`
-      );
+
+      document.getElementById("indexStats").innerText =
+        `Index rebuilt in ${data.indexing_time_ms.toFixed(3)} ms using ${data.threads_used} threads`;
+
       updateCorpusInfo();
     });
 }
