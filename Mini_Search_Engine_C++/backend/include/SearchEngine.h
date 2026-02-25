@@ -28,6 +28,7 @@ struct SearchResult {
 class SearchEngine {
 public:
     // Add document from file path
+    void buildIndexSingleThread();
     void addDocument(const string& path);
     int getDocumentCount() const;
     int getVocabularySize() const;

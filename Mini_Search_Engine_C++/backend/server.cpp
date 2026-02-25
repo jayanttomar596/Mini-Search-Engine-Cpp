@@ -2,8 +2,9 @@
 #include "SearchEngine.h"
 #include <iostream>
 #include <chrono>   
+#include<filesystem>
 
-using namespace std;
+using namespace std;   
 
 
 string escapeJson(const string& s) {
@@ -206,6 +207,67 @@ int main() {
                 to_string(engine.getLastIndexingTime()) + ",";
         json += "\"threads_used\":" +
                 to_string(engine.getLastThreadCount());
+        json += "}";
+
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_content(json, "application/json");
+    });
+
+
+
+    server.Get("/benchmark", [&](const httplib::Request& req,
+                             httplib::Response& res) {
+
+        namespace fs = std::filesystem;
+
+        vector<string> filePaths;
+
+        for (const auto& entry : fs::directory_iterator("../documents")) {
+            if (entry.is_regular_file() &&
+                entry.path().extension() == ".txt") {
+                filePaths.push_back(entry.path().string());
+            }
+        }
+
+        if (filePaths.empty()) {
+            res.set_content("No documents found for benchmark", "text/plain");
+            return;
+        }
+
+        // ---------- SINGLE THREAD ----------
+        SearchEngine singleEngine;
+
+        for (auto& path : filePaths)
+            singleEngine.addDocument(path);
+
+        auto start1 = std::chrono::high_resolution_clock::now();
+        singleEngine.buildIndexSingleThread();
+        auto end1 = std::chrono::high_resolution_clock::now();
+
+        double singleTime =
+            std::chrono::duration<double, std::milli>(end1 - start1).count();
+
+
+        // ---------- MULTI THREAD ----------
+        SearchEngine multiEngine;
+
+        for (auto& path : filePaths)
+            multiEngine.addDocument(path);
+
+        auto start2 = std::chrono::high_resolution_clock::now();
+        multiEngine.buildIndex();
+        auto end2 = std::chrono::high_resolution_clock::now();
+
+        double multiTime =
+            std::chrono::duration<double, std::milli>(end2 - start2).count();
+
+        double speedup = singleTime / multiTime;
+
+        string json = "{";
+        json += "\"single_thread_ms\":" + to_string(singleTime) + ",";
+        json += "\"multi_thread_ms\":" + to_string(multiTime) + ",";
+        json += "\"threads_used\":" + to_string(multiEngine.getLastThreadCount()) + ",";
+        json += "\"speedup\":" + to_string(speedup);
         json += "}";
 
         res.set_header("Access-Control-Allow-Origin", "*");

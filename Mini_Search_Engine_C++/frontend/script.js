@@ -236,6 +236,27 @@ function clearCorpus() {
 }
 
 
+
+
+
+function runBenchmark() {
+
+  fetch("http://localhost:8080/benchmark")
+    .then(res => res.json())
+    .then(data => {
+
+      document.getElementById("indexStats").innerText =
+        `Single-thread: ${data.single_thread_ms.toFixed(3)} ms | ` +
+        `Multi-thread: ${data.multi_thread_ms.toFixed(3)} ms | ` +
+        `Threads: ${data.threads_used} | ` +
+        `Speedup: ${data.speedup.toFixed(2)}x`;
+    })
+    .catch(err => {
+      console.error("Benchmark error:", err);
+    });
+}
+
+
 window.onload = updateCorpusInfo;
 
 

@@ -797,3 +797,41 @@ int SearchEngine::getLastThreadCount() const {
 }
 
 
+
+
+void SearchEngine::buildIndexSingleThread() {
+
+    invertedIndex.clear();
+    documentLength.clear();
+    documentContents.clear();
+    avgDocLength = 0.0;
+    trie = Trie();
+
+    for (int docID = 0; docID < documents.size(); docID++) {
+
+        ifstream file(documents[docID]);
+        if (!file) continue;
+
+        stringstream buffer;
+        buffer << file.rdbuf();
+
+        string content = buffer.str();
+        documentContents[docID] = content;
+
+        indexDocument(docID, content);
+    }
+
+    // Recompute average doc length
+    double totalLength = 0;
+    for (auto& [docID, length] : documentLength)
+        totalLength += length;
+
+    if (!documentLength.empty())
+        avgDocLength = totalLength / documentLength.size();
+
+    // Build Trie
+    for (auto& [word, _] : invertedIndex)
+        trie.insert(word);
+}
+
+
