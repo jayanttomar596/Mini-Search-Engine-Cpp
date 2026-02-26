@@ -749,12 +749,13 @@ void SearchEngine::clearIndex() {
     documents.clear();
     invertedIndex.clear();
     documentContents.clear();
-    documentLength.clear();   // 🔥 MISSING BEFORE
-    avgDocLength = 0.0;       // 🔥 RESET THIS TOO
+    documentLength.clear();   // MISSING BEFORE
+    avgDocLength = 0.0;       // RESET THIS TOO
 
     trie = Trie();
 
     usingSample = false;
+    includeInitialCorpus = false; // New added for check
 }
 
 
@@ -784,6 +785,8 @@ void SearchEngine::loadSampleDataset() {
     }
 
     buildIndex();  // multithreaded
+
+    includeInitialCorpus = true; // new addition for check 
 }
 
 
@@ -844,15 +847,18 @@ void SearchEngine::scanCorpusFolders() {
 
     documents.clear();
 
-    // Scan permanent corpus
-    for (const auto& entry : fs::directory_iterator("../documents")) {
-        if (entry.is_regular_file() &&
-            entry.path().extension() == ".txt") {
-            documents.push_back(entry.path().string());
+    // Include permanent corpus ONLY if enabled
+    if (includeInitialCorpus) {
+
+        for (const auto& entry : fs::directory_iterator("../documents")) {
+            if (entry.is_regular_file() &&
+                entry.path().extension() == ".txt") {
+                documents.push_back(entry.path().string());
+            }
         }
     }
 
-    // Scan runtime corpus
+    // Always include runtime corpus
     for (const auto& entry : fs::directory_iterator("../runtime_corpus")) {
         if (entry.is_regular_file() &&
             entry.path().extension() == ".txt") {

@@ -60,6 +60,7 @@ private:
     Trie trie;
     unordered_map<int, string> documentContents; // New Addition to show snippets 
     bool usingSample = false;
+    bool includeInitialCorpus = false; // new addition for check 
 
     void indexDocument(int docID, const string& content);
 

@@ -241,11 +241,10 @@ int main() {
 
     // -------- Rebuild Index --------
     server.Post("/rebuildIndex", [&](const httplib::Request& req,
-                                 httplib::Response& res) {
+                                    httplib::Response& res) {
 
-        engine.clearIndex();          // clear old structures
-        engine.scanCorpusFolders();   // rebuild document list from disk
-        engine.buildIndex();          // multithreaded rebuild
+        engine.scanCorpusFolders();   // refresh document list based on mode
+        engine.buildIndex();          // rebuild index structures
 
         string json = "{";
         json += "\"indexing_time_ms\":" +
@@ -256,7 +255,7 @@ int main() {
 
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(json, "application/json");
-    });        
+    });      
 
 
     server.Get("/benchmark", [&](const httplib::Request& req,
