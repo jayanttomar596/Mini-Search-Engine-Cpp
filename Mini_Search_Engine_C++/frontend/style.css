@@ -88,6 +88,8 @@ button:hover {
   margin-top: 10px;
   font-size: 14px;
   color: #22c55e;
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
 
 

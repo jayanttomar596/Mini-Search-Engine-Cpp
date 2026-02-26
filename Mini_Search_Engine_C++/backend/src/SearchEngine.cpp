@@ -835,3 +835,64 @@ void SearchEngine::buildIndexSingleThread() {
 }
 
 
+
+
+
+void SearchEngine::scanCorpusFolders() {
+
+    namespace fs = std::filesystem;
+
+    documents.clear();
+
+    // Scan permanent corpus
+    for (const auto& entry : fs::directory_iterator("../documents")) {
+        if (entry.is_regular_file() &&
+            entry.path().extension() == ".txt") {
+            documents.push_back(entry.path().string());
+        }
+    }
+
+    // Scan runtime corpus
+    for (const auto& entry : fs::directory_iterator("../runtime_corpus")) {
+        if (entry.is_regular_file() &&
+            entry.path().extension() == ".txt") {
+            documents.push_back(entry.path().string());
+        }
+    }
+}
+
+
+
+
+
+
+void SearchEngine::indexSingleDocument(const string& path) {
+
+    int docID = documents.size();
+    documents.push_back(path);
+
+    ifstream file(path);
+    if (!file) return;
+
+    stringstream buffer;
+    buffer << file.rdbuf();
+    string content = buffer.str();
+
+    documentContents[docID] = content;
+
+    indexDocument(docID, content);
+
+    // Update average document length
+    double total = 0;
+    for (auto& p : documentLength)
+        total += p.second;
+
+    if (!documentLength.empty())
+        avgDocLength = total / documentLength.size();
+
+    // Insert words into Trie
+    for (auto& [word, _] : invertedIndex)
+        trie.insert(word);
+}
+
+

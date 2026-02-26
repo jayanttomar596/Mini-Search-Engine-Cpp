@@ -32,6 +32,8 @@ public:
     void addDocument(const string& path);
     int getDocumentCount() const;
     int getVocabularySize() const;
+    void scanCorpusFolders();
+    void indexSingleDocument(const string& path);
 
     // NEW: Add document directly from content
     void addDocumentContent(const string& name, const string& content);

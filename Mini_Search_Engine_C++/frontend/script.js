@@ -2,6 +2,7 @@ const input = document.getElementById("query");
 const output = document.getElementById("output");
 const suggestions = document.getElementById("suggestions");
 const uploadStatus = document.getElementById("uploadStatus");
+let uploadTimer = null;   
 
 // ========================
 // 🔹 Upload file
@@ -12,42 +13,76 @@ function uploadFile() {
 
   if (!file) {
     uploadStatus.innerText = "Please select a file.";
+    uploadStatus.style.color = "red";
+    uploadStatus.style.opacity = "1";
     return;
   }
 
   const reader = new FileReader();
 
   reader.onload = function (e) {
-      fetch("http://localhost:8080/upload?filename=" + encodeURIComponent(file.name), {
-        method: "POST",
-        headers: {
-          "Content-Type": "text/plain"
-        },
-        body: e.target.result
-      })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error("Server error");
-        }
-        return res.text();
-      })
-      .then(msg => {
-        uploadStatus.innerText = msg;
-        uploadStatus.style.color = "#22c55e"; // green
-        fileInput.value = "";
-        // Refresh corpus stats after upload
-        updateCorpusInfo();
-      })
-      .catch(err => {
-        console.error("Upload error:", err);
-        uploadStatus.innerText = "Upload failed!";
-        uploadStatus.style.color = "red";
-      });
+    fetch("http://localhost:8080/upload?filename=" + encodeURIComponent(file.name), {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain"
+      },
+      body: e.target.result
+    })
+    .then(res => {
+      if (!res.ok) {
+        throw new Error("Server error");
+      }
+
+      const contentType = res.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        return res.json();
+      } else {
+        return res.text().then(text => ({ message: text }));
+      }
+    })
+    .then(data => {
+
+      if (uploadTimer) clearTimeout(uploadTimer);
+
+      uploadStatus.innerText = data.message;
+      uploadStatus.style.color = "#22c55e";
+      uploadStatus.style.opacity = "1";
+
+      fileInput.value = "";
+      updateCorpusInfo();
+
+      uploadTimer = setTimeout(() => {
+        uploadStatus.style.opacity = "0";
+      }, 3000);
+    })
+    .catch(err => {
+
+      console.error("Upload error:", err);
+
+      if (uploadTimer) clearTimeout(uploadTimer);
+
+      uploadStatus.innerText = "Upload failed!";
+      uploadStatus.style.color = "red";
+      uploadStatus.style.opacity = "1";
+
+      uploadTimer = setTimeout(() => {
+        uploadStatus.style.opacity = "0";
+      }, 3000);
+    });
   };
 
   reader.onerror = function () {
+
+    if (uploadTimer) clearTimeout(uploadTimer);
+
     uploadStatus.innerText = "Failed to read file.";
     uploadStatus.style.color = "red";
+    uploadStatus.style.opacity = "1";
+
+    uploadTimer = setTimeout(() => {
+      uploadStatus.style.opacity = "0";
+    }, 3000);
   };
 
   reader.readAsText(file);

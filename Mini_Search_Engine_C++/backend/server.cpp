@@ -1,8 +1,10 @@
 #include "httplib.h"
 #include "SearchEngine.h"
 #include <iostream>
+#include <fstream>
 #include <chrono>   
 #include<filesystem>
+namespace fs = std::filesystem;
 
 using namespace std;   
 
@@ -66,30 +68,63 @@ string toJson(const vector<SearchResult>& results) {
 int main() {
     SearchEngine engine;
     httplib::Server server;
+    
+
+    // STEP 1: Initialize runtime_corpus folder
+    fs::remove_all("../runtime_corpus");
+    fs::create_directory("../runtime_corpus");
+
 
     // -------- Upload Endpoint (Plain Text Version) --------
     server.Post("/upload", [&](const httplib::Request& req,
-                               httplib::Response& res) {
+                           httplib::Response& res) {
+
+        res.set_header("Access-Control-Allow-Origin", "*");
 
         if (req.body.empty()) {
-            res.set_content("Empty file content", "text/plain");
+            res.set_content("{\"message\":\"Empty file content\"}", "application/json");
             return;
         }
 
-        // static int fileCounter = 1;
-        // string docName = "uploaded_doc_" + to_string(fileCounter++) + ".txt";
-
         if (!req.has_param("filename")) {
-            res.set_content("Missing filename", "text/plain");
+            res.set_content("{\"message\":\"Missing filename\"}", "application/json");
             return;
         }
 
         string docName = req.get_param_value("filename");
 
-        engine.addDocumentContent(docName, req.body);
+        string baseName = docName;
+        string savePath = "../runtime_corpus/" + baseName;
 
-        res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_content("File uploaded and indexed successfully!", "text/plain");
+        int counter = 1;
+
+        while (fs::exists(savePath)) {
+
+            size_t dotPos = baseName.find_last_of('.');
+            string name = baseName;
+            string extension = "";
+
+            if (dotPos != string::npos) {
+                name = baseName.substr(0, dotPos);
+                extension = baseName.substr(dotPos);
+            }
+
+            savePath = "../runtime_corpus/" +
+                    name + "_" + to_string(counter) + extension;
+
+            counter++;
+        }
+
+        ofstream out(savePath);
+        out << req.body;
+        out.close();
+
+        engine.indexSingleDocument(savePath);
+
+        res.set_content(
+            "{\"message\":\"File uploaded and indexed successfully!\"}",
+            "application/json"
+        );
     });
 
 
@@ -200,7 +235,9 @@ int main() {
     server.Post("/rebuildIndex", [&](const httplib::Request& req,
                                  httplib::Response& res) {
 
-        engine.buildIndex();
+        engine.clearIndex();          // clear old structures
+        engine.scanCorpusFolders();   // rebuild document list from disk
+        engine.buildIndex();          // multithreaded rebuild
 
         string json = "{";
         json += "\"indexing_time_ms\":" +
@@ -211,8 +248,7 @@ int main() {
 
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content(json, "application/json");
-    });
-
+    });        
 
 
     server.Get("/benchmark", [&](const httplib::Request& req,
@@ -222,6 +258,7 @@ int main() {
 
         vector<string> filePaths;
 
+        // Scan permanent corpus
         for (const auto& entry : fs::directory_iterator("../documents")) {
             if (entry.is_regular_file() &&
                 entry.path().extension() == ".txt") {
@@ -229,7 +266,16 @@ int main() {
             }
         }
 
+        // Scan runtime corpus
+        for (const auto& entry : fs::directory_iterator("../runtime_corpus")) {
+            if (entry.is_regular_file() &&
+                entry.path().extension() == ".txt") {
+                filePaths.push_back(entry.path().string());
+            }
+        }
+
         if (filePaths.empty()) {
+            res.set_header("Access-Control-Allow-Origin", "*");
             res.set_content("No documents found for benchmark", "text/plain");
             return;
         }
