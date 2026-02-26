@@ -220,9 +220,19 @@ int main() {
 
     // -------- Clear Corpus --------
     server.Post("/clearCorpus", [&](const httplib::Request& req,
-                                    httplib::Response& res) {
+                                httplib::Response& res) {
 
+        namespace fs = std::filesystem;
+
+        // 1. Clear in-memory index
         engine.clearIndex();
+
+        // 2. Delete all runtime uploaded files
+        for (const auto& entry : fs::directory_iterator("../runtime_corpus")) {
+            if (entry.is_regular_file()) {
+                fs::remove(entry.path());
+            }
+        }
 
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_content("Corpus cleared successfully", "text/plain");
