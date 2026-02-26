@@ -75,19 +75,19 @@ int main() {
     fs::create_directory("../runtime_corpus");
 
 
-    // -------- Upload Endpoint (Plain Text Version) --------
+// -------- Upload Endpoint --------
     server.Post("/upload", [&](const httplib::Request& req,
-                           httplib::Response& res) {
+                            httplib::Response& res) {
 
         res.set_header("Access-Control-Allow-Origin", "*");
 
         if (req.body.empty()) {
-            res.set_content("{\"message\":\"Empty file content\"}", "application/json");
+            res.set_content("Empty file content", "text/plain");
             return;
         }
 
         if (!req.has_param("filename")) {
-            res.set_content("{\"message\":\"Missing filename\"}", "application/json");
+            res.set_content("Missing filename", "text/plain");
             return;
         }
 
@@ -121,10 +121,8 @@ int main() {
 
         engine.indexSingleDocument(savePath);
 
-        res.set_content(
-            "{\"message\":\"File uploaded and indexed successfully!\"}",
-            "application/json"
-        );
+        // 🔥 Back to plain text
+        res.set_content("File uploaded and indexed successfully!", "text/plain");
     });
 
 

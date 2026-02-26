@@ -2,7 +2,6 @@ const input = document.getElementById("query");
 const output = document.getElementById("output");
 const suggestions = document.getElementById("suggestions");
 const uploadStatus = document.getElementById("uploadStatus");
-let uploadTimer = null;   
 
 // ========================
 // 🔹 Upload file
@@ -14,7 +13,6 @@ function uploadFile() {
   if (!file) {
     uploadStatus.innerText = "Please select a file.";
     uploadStatus.style.color = "red";
-    uploadStatus.style.opacity = "1";
     return;
   }
 
@@ -32,57 +30,25 @@ function uploadFile() {
       if (!res.ok) {
         throw new Error("Server error");
       }
-
-      const contentType = res.headers.get("content-type");
-
-      if (contentType && contentType.includes("application/json")) {
-        return res.json();
-      } else {
-        return res.text().then(text => ({ message: text }));
-      }
+      return res.text();
     })
-    .then(data => {
-
-      if (uploadTimer) clearTimeout(uploadTimer);
-
-      uploadStatus.innerText = data.message;
+    .then(msg => {
+      uploadStatus.innerText = msg;
       uploadStatus.style.color = "#22c55e";
-      uploadStatus.style.opacity = "1";
 
       fileInput.value = "";
       updateCorpusInfo();
-
-      uploadTimer = setTimeout(() => {
-        uploadStatus.style.opacity = "0";
-      }, 3000);
     })
     .catch(err => {
-
       console.error("Upload error:", err);
-
-      if (uploadTimer) clearTimeout(uploadTimer);
-
       uploadStatus.innerText = "Upload failed!";
       uploadStatus.style.color = "red";
-      uploadStatus.style.opacity = "1";
-
-      uploadTimer = setTimeout(() => {
-        uploadStatus.style.opacity = "0";
-      }, 3000);
     });
   };
 
   reader.onerror = function () {
-
-    if (uploadTimer) clearTimeout(uploadTimer);
-
     uploadStatus.innerText = "Failed to read file.";
     uploadStatus.style.color = "red";
-    uploadStatus.style.opacity = "1";
-
-    uploadTimer = setTimeout(() => {
-      uploadStatus.style.opacity = "0";
-    }, 3000);
   };
 
   reader.readAsText(file);
