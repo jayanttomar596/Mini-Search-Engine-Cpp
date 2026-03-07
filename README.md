@@ -1,73 +1,149 @@
-# Mini-Search-Engine-Cpp
-Fast Search Engine in C++ using Inverted Index for efficient exact search and Trie for autocomplete. Documents are indexed once to enable fast queries without rescanning files. Includes a web frontend that displays document matches, frequency, positions, and offsets.
+# 🚀 Dynamic Mini Search Engine in C++
 
+### Multithreaded Inverted Index • BM25 Ranking • Trie Autocomplete • REST APIs • Web UI
 
+This project implements a **dynamic full-stack search engine written in C++** that demonstrates several core ideas used in real-world search systems.
 
-# WORKING VIDEO LINK
+It supports **fast document retrieval using an inverted index**, **BM25 ranking**, **phrase & proximity boosting**, **Trie-based autocomplete**, and **runtime document ingestion** with an interactive web interface.
+
+The system is designed with **clean architecture, performance-aware indexing, and modular components**, making it a great demonstration of **information retrieval, data structures, concurrency, and backend system design**.
+
+---
+
+# 🎥 Demo
+
+## ▶️ Working Video
 https://www.youtube.com/watch?v=cc0ks_HMolY
 
+---
 
-# Fast Search Engine in C++ 🚀  
-### Inverted Index + Trie Based Mini Search Engine with Web Frontend
+# 📌 Project Highlights
 
-This project implements a **fast and efficient text search engine** in **C++**, inspired by the core ideas used in real-world search engines.  
-It uses **Inverted Indexing** for fast exact word search and a **Trie data structure** for prefix-based autocomplete, combined with a **web-based frontend** for interactive searching.
+## ⚡ Fast Ranked Search
+- Uses **inverted index** for near O(1) term lookup
+- Implements **BM25 ranking algorithm**
+- Supports **multi-word queries**
+
+## 🧠 Intelligent Ranking Signals
+Search relevance is improved using:
+- **BM25 scoring**
+- **Phrase boosting**
+- **Proximity boosting (k-word window)**
+
+## ✏️ Spell Correction
+- Implemented using **Levenshtein edit distance**
+- Uses **document frequency tie-breaking** to choose best correction
+
+Example:
+
+
+recieve → receive
+serach → search
+
+
+## 🔎 Trie-Based Autocomplete
+- Prefix suggestions using **Trie**
+- Supports extended tokens such as:
+
+
+C++
+file.txt
+snake_case
+namespace::function
+
+
+## 🧵 Multithreaded Indexing
+Initial corpus indexing uses **parallel processing**:
+
+
+Thread 1 → Documents 0–N
+Thread 2 → Documents N–2N
+Thread 3 → Documents 2N–3N
+
+
+Each thread builds a **local inverted index**, followed by a **merge phase**.
+
+This avoids:
+- mutex locks
+- race conditions
+- lock contention
+
+## 🔄 Hybrid Indexing Pipeline
+
+The system uses **two indexing strategies**:
+
+| Workload | Strategy |
+|--------|--------|
+| Initial corpus | Multithreaded indexing |
+| Runtime uploads | Incremental single-document indexing |
+
+This ensures:
+- fast bulk indexing
+- instant availability of uploaded documents
+
+## 📂 Runtime Corpus Management
+
+Uploaded documents are stored in a **temporary runtime corpus**:
+
+
+runtime_corpus/
+
+
+Behavior:
+- documents become searchable immediately
+- folder automatically resets when the server restarts
+- prevents stale runtime data accumulation
+
+## 📊 Performance Benchmarking
+
+The system includes a **benchmark endpoint** comparing:
+
+- Single-thread indexing
+- Multi-thread indexing
+- Speedup ratio
+
+Displayed directly in the UI.
+
+## 📈 System Observability
+
+The web interface displays:
+
+- Search latency
+- Indexing latency
+- Corpus size
+- Vocabulary size
+- Threads used during indexing
 
 ---
 
-## 📌 Project Overview
+# 🏗️ System Architecture
 
-Traditional text search scans documents line by line, which becomes slow as data grows.  
-This project solves that problem by separating the system into two phases:
 
-1. **Indexing Phase (one-time, slow)**
-2. **Querying Phase (fast, repeated)**
+User (Browser)
+↓
+Frontend (HTML / CSS / JS)
+↓ HTTP Requests
+C++ HTTP Server (cpp-httplib)
+↓
+SearchEngine Core
+↓
+Inverted Index + Trie
 
-All documents are indexed once, and subsequent searches are performed in near constant time without rescanning files.
 
----
+### Components
 
-## ✨ Key Features
-
-- 🔍 **Fast Exact Search**
-  - Uses **Inverted Index** (word → documents mapping)
-  - No document scanning during queries
-- ⚡ **Autocomplete Suggestions**
-  - Implemented using **Trie**
-  - Supports prefix-based search suggestions
-- 📊 **Rich Search Metadata**
-  - Word frequency
-  - Word positions
-  - Byte offsets
-- 🌐 **Web-Based Frontend**
-  - Built using HTML, CSS, and JavaScript
-  - Communicates with backend via HTTP APIs
-- 🧠 **Clean Architecture**
-  - Clear separation between indexing and querying
-  - Backend logic independent of frontend UI
+| Layer | Responsibility |
+|------|---------------|
+| Frontend | User interface & query visualization |
+| HTTP Server | REST API layer |
+| SearchEngine | Indexing, ranking, query processing |
+| Trie | Autocomplete suggestions |
+| Inverted Index | Word → document mapping |
 
 ---
 
+# 📂 Project Structure
 
-## 🏗️ System Architecture
-
-User (Browser)<br>
-↓ HTTP Requests<br>
-Frontend (HTML / CSS / JS)<br>
-↓ REST API<br>
-C++ Backend Server<br>
-↓<br>
-Search Engine Core
-
-
-
-
-
-
-📁 Project Structure
-
-
-```
 
 Mini_Search_Engine_C++/
 │
@@ -88,115 +164,180 @@ Mini_Search_Engine_C++/
 │ ├── script.js
 │ └── style.css
 │
-└── documents/
-├── doc1.txt
-├── doc2.txt
-└── doc3.txt
-
-```
-
-
+├── documents/
+│ ├── doc1.txt
+│ ├── doc2.txt
+│ └── doc3.txt
+│
+└── runtime_corpus/
 
 
 ---
 
-## ⚙️ How It Works
+# ⚙️ How the System Works
 
-### 🔹 Indexing Phase
-- All documents are read once
-- Each word is:
-  - Normalized (lowercase, punctuation removed)
-  - Stored in an **Inverted Index** with:
-    - Document ID
-    - Frequency
-    - Positions
-    - Byte offsets
-  - Inserted into a **Trie** for autocomplete
+## 🔹 Indexing Phase
 
-### 🔹 Querying Phase
-- Exact search:
-  - Direct lookup in the inverted index
-- Autocomplete:
-  - Prefix lookup in the trie
-- No file I/O during search queries
+Documents are processed once during indexing.
 
----
+For each word:
+- normalize text
+- update inverted index
+- store frequency
+- store word positions
+- store byte offsets
+- insert word into Trie
 
-## 🚀 Getting Started
-
-### 🔧 Backend Setup
-
-```
-cd backend
-g++ -std=c++20 server.cpp src/SearchEngine.cpp src/Trie.cpp -I include -o server
-./server
+Example index entry:
 
 
-
-🌐 Frontend Setup
-cd frontend
-python3 -m http.server 5500
-
-
-Open in browser:
-
-http://localhost:5500
-
-```
-
----
-
-
-🧪 Example Queries
-Exact Search
-search
-engine
-inverted
-
-Autocomplete
-se → search, searching, search engine
-in → inverted, indexing, information
-
----
-
-⏱️ Time Complexity
-Operation	Complexity
-Indexing	O(N) (one-time)
-Search	O(1) + results
-Autocomplete	O(prefix length + matches)
-🧠 Concepts & Technologies Used
-
-Inverted Index
-
-Trie Data Structure
-
-Hash Maps
-
-File Handling in C++
-
-HTTP Server (cpp-httplib)
-
-REST API Design
-
-Frontend–Backend Integration
-
----
-
-📌 Future Enhancements
-
-Phrase search ("search engine")
-
-Ranking (TF-IDF)
-
-Snippet generation using offsets
-
-Fuzzy search (typo tolerance)
-
-Persistent disk-based index
+search → {
+doc1 : {freq=3, positions=[2,15,30]}
+doc2 : {freq=1, positions=[7]}
+}
 
 
 ---
 
+## 🔹 Query Processing Phase
+
+When a user submits a query:
 
 
+machine learning
 
+
+Steps:
+
+1. Tokenize and normalize query  
+2. Spell-correct unknown terms  
+3. Retrieve candidate documents  
+4. Compute **BM25 ranking score**  
+5. Apply phrase boost  
+6. Apply proximity boost  
+7. Extract contextual snippet  
+8. Sort and return results  
+
+---
+
+# 🔹 Ranking Formula
+
+The engine uses **BM25 scoring**:
+
+
+Score = Σ BM25(term, doc)
++ PhraseBoost
++ ProximityBoost
+
+
+BM25 parameters:
+
+
+k1 = 1.5
+b = 0.75
+
+
+Phrase boost:
+
+
+1.5 × phrase_frequency
+
+
+Proximity boost:
+
+
+0.75 × proximity_matches
+
+
+---
+
+# 🌐 REST API Endpoints
+
+| Endpoint | Description |
+|--------|-------------|
+| `/search?q=` | Search query |
+| `/autocomplete?prefix=` | Prefix suggestions |
+| `/upload` | Upload new document |
+| `/loadSample` | Load initial corpus |
+| `/rebuildIndex` | Rebuild index |
+| `/corpusInfo` | Corpus statistics |
+| `/benchmark` | Indexing benchmark |
+| `/clearCorpus` | Clear runtime corpus |
+
+---
+
+# 🧪 Example Queries
+
+### Exact Search
+
+
+search engine
+machine learning
+inverted index
+
+
+### Autocomplete
+
+
+se → search, search-engine
+ma → machine, machine-learning
+
+
+### Spell Correction
+
+
+recieve → receive
+serach → search
+
+
+---
+
+# ⏱️ Time Complexity
+
+| Operation | Complexity |
+|-----------|-----------|
+| Indexing | O(total words) |
+| Search | O(candidate_docs log candidate_docs) |
+| Autocomplete | O(prefix_length + results) |
+| Spell Correction | O(vocabulary × word_length²) |
+
+---
+
+# 🧠 Concepts Used
+
+- Inverted Index
+- BM25 Ranking
+- Phrase & Proximity Search
+- Trie Data Structure
+- Edit Distance (Levenshtein)
+- Multithreaded Processing
+- REST API Design
+- File System Management
+- Frontend–Backend Integration
+
+---
+
+# 🚀 Future Improvements
+
+Possible upgrades:
+
+- Phrase chain matching for multi-word queries
+- Distance-weighted proximity scoring
+- Persistent disk-based index
+- Query result caching
+- Distributed search architecture
+- Ranked autocomplete suggestions
+
+---
+
+# 👨‍💻 Author
+
+**Jayant Tomar**
+
+Computer Science Engineering — Delhi Technological University
+
+Focus Areas:
+- Information Retrieval
+- Backend Systems
+- Search Infrastructure
+- Performance Optimization
