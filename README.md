@@ -116,7 +116,7 @@ The web interface displays:
 
 ---
 
-# 🏗️ System Architecture
+## 🏗️ System Architecture
 
 
 User (Browser)
@@ -128,6 +128,7 @@ C++ HTTP Server (cpp-httplib)
 SearchEngine Core
 ↓
 Inverted Index + Trie
+
 
 
 ### Components
@@ -142,7 +143,7 @@ Inverted Index + Trie
 
 ---
 
-# 📂 Project Structure
+## 📂 Project Structure
 
 
 Mini_Search_Engine_C++/
