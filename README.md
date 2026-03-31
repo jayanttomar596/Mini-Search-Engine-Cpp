@@ -1,4 +1,4 @@
-# 🚀 Dynamic Mini Search Engine in C++
+# Dynamic Mini Search Engine in C++
 
 ### Multithreaded Inverted Index • BM25 Ranking • Trie Autocomplete • REST APIs • Web UI
 
@@ -10,27 +10,27 @@ The system is designed with **clean architecture, performance-aware indexing, an
 
 ---
 
-# 🎥 Demo
+# Demo
 
-## ▶️ Working Video
+## Working Video
 https://www.youtube.com/watch?v=cc0ks_HMolY
 
 ---
 
-# 📌 Project Highlights
+# Project Highlights
 
-## ⚡ Fast Ranked Search
+## Fast Ranked Search
 - Uses **inverted index** for near O(1) term lookup
 - Implements **BM25 ranking algorithm**
 - Supports **multi-word queries**
 
-## 🧠 Intelligent Ranking Signals
+## Intelligent Ranking Signals
 Search relevance is improved using:
 - **BM25 scoring**
 - **Phrase boosting**
 - **Proximity boosting (k-word window)**
 
-## ✏️ Spell Correction
+## Spell Correction
 - Implemented using **Levenshtein edit distance**
 - Uses **document frequency tie-breaking** to choose best correction
 
@@ -41,7 +41,7 @@ recieve → receive
 serach → search
 
 
-## 🔎 Trie-Based Autocomplete
+## Trie-Based Autocomplete
 - Prefix suggestions using **Trie**
 - Supports extended tokens such as:
 
@@ -52,7 +52,7 @@ snake_case
 namespace::function
 
 
-## 🧵 Multithreaded Indexing
+## Multithreaded Indexing
 Initial corpus indexing uses **parallel processing**:
 
 
@@ -68,7 +68,7 @@ This avoids:
 - race conditions
 - lock contention
 
-## 🔄 Hybrid Indexing Pipeline
+## Hybrid Indexing Pipeline
 
 The system uses **two indexing strategies**:
 
@@ -81,7 +81,7 @@ This ensures:
 - fast bulk indexing
 - instant availability of uploaded documents
 
-## 📂 Runtime Corpus Management
+## Runtime Corpus Management
 
 Uploaded documents are stored in a **temporary runtime corpus**:
 
@@ -94,7 +94,7 @@ Behavior:
 - folder automatically resets when the server restarts
 - prevents stale runtime data accumulation
 
-## 📊 Performance Benchmarking
+## Performance Benchmarking
 
 The system includes a **benchmark endpoint** comparing:
 
@@ -104,7 +104,7 @@ The system includes a **benchmark endpoint** comparing:
 
 Displayed directly in the UI.
 
-## 📈 System Observability
+## System Observability
 
 The web interface displays:
 
@@ -116,7 +116,7 @@ The web interface displays:
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```
 User (Browser)
@@ -143,7 +143,7 @@ Inverted Index + Trie
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 Mini_Search_Engine_C++/
@@ -175,9 +175,9 @@ Mini_Search_Engine_C++/
 
 ---
 
-# ⚙️ How the System Works
+# How the System Works
 
-## 🔹 Indexing Phase
+## Indexing Phase
 
 Documents are processed once during indexing.
 
@@ -200,7 +200,7 @@ doc2 : {freq=1, positions=[7]}
 
 ---
 
-## 🔹 Query Processing Phase
+## Query Processing Phase
 
 When a user submits a query:
 
@@ -221,7 +221,7 @@ Steps:
 
 ---
 
-# 🔹 Ranking Formula
+# Ranking Formula
 
 The engine uses **BM25 scoring**:
 
@@ -252,7 +252,7 @@ Proximity boost:
 
 ---
 
-# 🌐 REST API Endpoints
+# REST API Endpoints
 
 | Endpoint | Description |
 |--------|-------------|
@@ -267,7 +267,7 @@ Proximity boost:
 
 ---
 
-# 🧪 Example Queries
+# Example Queries
 
 ### Exact Search
 
@@ -293,7 +293,7 @@ serach → search
 
 ---
 
-# ⏱️ Time Complexity
+# Time Complexity
 
 | Operation | Complexity |
 |-----------|-----------|
@@ -304,7 +304,7 @@ serach → search
 
 ---
 
-# 🧠 Concepts Used
+# Concepts Used
 
 - Inverted Index
 - BM25 Ranking
@@ -318,7 +318,7 @@ serach → search
 
 ---
 
-# 🚀 Future Improvements
+# Future Improvements
 
 Possible upgrades:
 
@@ -331,7 +331,7 @@ Possible upgrades:
 
 ---
 
-# 👨‍💻 Author
+# Author
 
 **Jayant Tomar**
 
