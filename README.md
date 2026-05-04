@@ -1,4 +1,4 @@
-# Dynamic Mini Search Engine in C++
+# Fast Mini Search Engine in C++
 
 ### Multithreaded Inverted Index • BM25 Ranking • Trie Autocomplete • REST APIs • Web UI
 
