@@ -160,9 +160,9 @@ Inverted Index + Trie
 
 ### Benchmark Screenshots
 
-![Index Benchmark](images/index_benchmark.png)
+![Index Benchmark](Images/index_benchmark.png)
 
-![Search Benchmark](images/search_benchmark.png)
+![Search Benchmark](Images/avg_latency.png)
 
 
 ### Components
