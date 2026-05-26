@@ -4,7 +4,7 @@ HOW TO RUN (FOLLOW EXACTLY)
 
 1️⃣ Run backend
 
-
+cd Mini_Search_Engine_C++
 cd backend
 g++ -std=c++20 server.cpp src/SearchEngine.cpp src/Trie.cpp -I include -o server
 ./server
