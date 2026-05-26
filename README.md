@@ -131,6 +131,25 @@ Inverted Index + Trie
 ```
 
 
+
+## Performance Benchmark
+
+The search engine supports multithreaded indexing using C++ threads and demonstrates significant indexing speedup over a single-threaded implementation.
+
+### Benchmark Results
+
+- Indexed Documents: 1004
+- Vocabulary Size: 33,360 unique terms
+- Single-threaded Indexing: 838.958 ms
+- Multi-threaded Indexing: 392.348 ms
+- Threads Used: 8
+- Parallel Indexing Speedup: 2.14×
+
+### Benchmark Screenshot
+
+![Benchmark Screenshot](images/benchmark.png)
+
+
 ### Components
 
 | Layer | Responsibility |
