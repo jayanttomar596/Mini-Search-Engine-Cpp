@@ -160,7 +160,7 @@ Inverted Index + Trie
 
 ### Benchmark Screenshots
 
-![Index Benchmark](Images/index_benchmark.png)
+![Index Benchmark](Images/benchmark.png)
 
 ![Search Benchmark](Images/avg_latency.png)
 
