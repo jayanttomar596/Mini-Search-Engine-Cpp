@@ -147,7 +147,7 @@ The search engine supports multithreaded indexing using C++ threads and demonstr
 
 ### Benchmark Screenshot
 
-![Benchmark Screenshot](images/benchmark.png)
+![Benchmark Screenshot](Images/benchmark.png)
 
 
 ### Components
