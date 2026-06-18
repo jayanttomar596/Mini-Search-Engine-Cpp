@@ -104,6 +104,15 @@ string correctWord(
 
 
 
+// ---------------- CACHE INVALIDATION ----------------
+void SearchEngine::invalidateCache() {
+    lock_guard<mutex> lock(cacheMutex);
+    cacheMap.clear();
+    lruList.clear();
+}
+
+
+
 
 // ---------------- NORMALIZE ----------------
 
@@ -259,6 +268,7 @@ void SearchEngine::addDocumentContent(const string& name, const string& content)
 */
 
 void SearchEngine::addDocumentContent(const string& name, const string& content) {
+    invalidateCache();
 
     string finalName = name;
 
@@ -331,6 +341,7 @@ void SearchEngine::buildIndex() {
 void SearchEngine::buildIndex() {
     // just to check whether this function is called or not 
     // std::cout << "buildIndex() called\n";
+    invalidateCache();
 
     auto start = std::chrono::high_resolution_clock::now(); // To track time
 
@@ -566,6 +577,18 @@ double computeBM25(
 // ======================= SEARCH API =======================
 vector<SearchResult> SearchEngine::searchAPI(const string& query) {
 
+    {
+        lock_guard<mutex> lock(cacheMutex); // Lock only during cache lookup
+        if (cacheMap.find(query) != cacheMap.end()) {
+            // Cache HIT: Move this query to the front of the LRU list
+            lruList.erase(cacheMap[query].second);
+            lruList.push_front(query);
+            cacheMap[query].second = lruList.begin();
+            
+            return cacheMap[query].first; // Return instantly!
+        }
+    }
+
     vector<SearchResult> results;
     vector<string> terms = splitQuery(query);
 
@@ -735,6 +758,24 @@ vector<SearchResult> SearchEngine::searchAPI(const string& query) {
     });
 
 
+    
+
+    {
+        lock_guard<mutex> lock(cacheMutex); // Lock only during cache insertion
+        
+        // Evict the oldest query if we hit capacity
+        if (cacheMap.size() >= cacheCapacity) {
+            string last = lruList.back();
+            lruList.pop_back();
+            cacheMap.erase(last);
+        }
+        
+        // Insert new query at the front
+        lruList.push_front(query);
+        cacheMap[query] = {results, lruList.begin()};
+    }
+
+
     return results;
 }
 
@@ -745,6 +786,7 @@ vector<string> SearchEngine::autocompleteAPI(const string& prefix) {
 
 // ---------------- CLEAR INDEX ----------------
 void SearchEngine::clearIndex() {
+    invalidateCache();
 
     documents.clear();
     invertedIndex.clear();
@@ -763,6 +805,7 @@ void SearchEngine::clearIndex() {
 // ---------------- LOAD SAMPLE ----------------
 
 void SearchEngine::loadSampleDataset() {
+    invalidateCache();
 
     clearIndex();   // 🔥 Always reset
 
@@ -803,6 +846,7 @@ int SearchEngine::getLastThreadCount() const {
 
 
 void SearchEngine::buildIndexSingleThread() {
+    invalidateCache();
 
     invertedIndex.clear();
     documentLength.clear();
@@ -873,6 +917,7 @@ void SearchEngine::scanCorpusFolders() {
 
 
 void SearchEngine::indexSingleDocument(const string& path) {
+    invalidateCache();
 
     int docID = documents.size();
     documents.push_back(path);

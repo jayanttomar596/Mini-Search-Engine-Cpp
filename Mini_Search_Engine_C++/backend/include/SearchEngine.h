@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <list>     
+#include <mutex>     
 #include "Trie.h"
 
 using namespace std;
@@ -61,6 +63,15 @@ private:
     unordered_map<int, string> documentContents; // New Addition to show snippets 
     bool usingSample = false;
     bool includeInitialCorpus = false; // new addition for check 
+
+
+
+    int cacheCapacity = 100; // Store up to 100 recent queries
+    list<string> lruList;    // Tracks recency (front = newest, back = oldest)
+    unordered_map<string, pair<vector<SearchResult>, list<string>::iterator>> cacheMap;
+    mutex cacheMutex;        // Thread-safety for concurrent API requests
+
+    void invalidateCache();  // Helper to clear cache when corpus changes
 
     void indexDocument(int docID, const string& content);
 
