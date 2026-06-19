@@ -152,11 +152,11 @@ Inverted Index + Trie
 
 | Metric | Result |
 |---|---|
-| Average Latency | 0.833 ms |
-| P95 Latency | 1.082 ms |
-| Min Latency | 0.592 ms |
-| Max Latency | 5.038 ms |
-| Throughput | 1199.68 queries/sec |
+| Average Latency | 0.758 ms |
+| P95 Latency | 1.015 ms |
+| Min Latency | 0.601 ms |
+| Max Latency | 4.596 ms |
+| Throughput | 1319.26 queries/sec |
 
 ### Benchmark Screenshots
 
