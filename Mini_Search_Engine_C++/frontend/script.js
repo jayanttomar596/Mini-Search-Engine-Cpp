@@ -78,29 +78,35 @@ function highlightSnippet(text, query) {
 
 
 
+
+
+let currentPage = 1;
+const resultsPerPage = 10;
+let currentQuery = "";
+
+
+
 // ========================
 // 🔹 Search
 // ========================
-function search() {
+function search(isNewSearch = true) {
   const q = input.value.trim();
   if (!q) return;
 
-  fetch(`http://localhost:8080/search?q=${encodeURIComponent(q)}`)
-    .then(res => {
-      if (!res.ok) {
-        throw new Error("Search request failed");
-      }
-      return res.json();
-    })
+
+  if (isNewSearch) {
+    currentPage = 1;
+    currentQuery = q;
+  }
+
+  fetch(`http://localhost:8080/search?q=${encodeURIComponent(currentQuery)}&page=${currentPage}&limit=${resultsPerPage}`)
+    .then(res => res.json())
     .then(data => {
-      output.innerHTML = `
-      <p style="color:#94a3b8">
-        Search time: <b>${data.latency_ms.toFixed(3)} ms</b>
-      </p>
-    `;
+      output.innerHTML = `<p style="color:#94a3b8">Search time: <b>${data.latency_ms.toFixed(3)} ms</b></p>`;
 
       if (!data.results || data.results.length === 0) {
-        output.innerHTML = "<p class='no-result'>No results found</p>";
+        output.innerHTML += "<p class='no-result'>No results found</p>";
+        document.getElementById("pagination").style.display = "none";
         return;
       }
 
@@ -131,12 +137,31 @@ function search() {
         
         output.appendChild(card);
       });
+
+
+      document.getElementById("pagination").style.display = "flex";
+      document.getElementById("pageIndicator").innerText = `Page ${currentPage}`;
+      document.getElementById("prevBtn").disabled = (currentPage === 1);
+      
+      // If we got fewer results than the limit, we hit the end
+      document.getElementById("nextBtn").disabled = (data.results.length < resultsPerPage);
     })
     .catch(err => {
       console.error("Search error:", err);
       output.innerHTML = "<p class='no-result'>Search failed</p>";
     });
 }
+
+
+function changePage(direction) {
+  currentPage += direction;
+  if (currentPage < 1) currentPage = 1;
+  search(false); // false means don't reset to page 1
+}
+
+
+
+
 
 
 // ========================

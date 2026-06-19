@@ -45,7 +45,7 @@ public:
     void clearIndex();
 
 
-    vector<SearchResult> searchAPI(const string& word);
+    vector<SearchResult> searchAPI(const string& query, int page = 1, int limit = 10);
     vector<string> autocompleteAPI(const string& prefix);
 
     double getLastIndexingTime() const;

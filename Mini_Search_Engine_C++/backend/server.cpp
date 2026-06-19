@@ -155,10 +155,14 @@ int main() {
 
         auto q = req.get_param_value("q");
 
+
+        int page = req.has_param("page") ? stoi(req.get_param_value("page")) : 1;
+        int limit = req.has_param("limit") ? stoi(req.get_param_value("limit")) : 10;
+
         // Start timer
         auto start = std::chrono::high_resolution_clock::now();
 
-        auto results = engine.searchAPI(q);
+        auto results = engine.searchAPI(q, page, limit);
 
         // End timer
         auto end = std::chrono::high_resolution_clock::now();

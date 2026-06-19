@@ -8,6 +8,7 @@
 #include <thread>
 #include <vector>
 #include <algorithm>
+#include <queue>
 #include <filesystem>
 #include <chrono>
 namespace fs = std::filesystem;
@@ -575,17 +576,19 @@ double computeBM25(
 
 
 // ======================= SEARCH API =======================
-vector<SearchResult> SearchEngine::searchAPI(const string& query) {
+vector<SearchResult> SearchEngine::searchAPI(const string& query, int page, int limit) {
 
+    // Cache key must combine query, page, and limit
+    string cacheKey = query + "_p" + to_string(page) + "_l" + to_string(limit);
+
+    
     {
-        lock_guard<mutex> lock(cacheMutex); // Lock only during cache lookup
-        if (cacheMap.find(query) != cacheMap.end()) {
-            // Cache HIT: Move this query to the front of the LRU list
-            lruList.erase(cacheMap[query].second);
-            lruList.push_front(query);
-            cacheMap[query].second = lruList.begin();
-            
-            return cacheMap[query].first; // Return instantly!
+        lock_guard<mutex> lock(cacheMutex); 
+        if (cacheMap.find(cacheKey) != cacheMap.end()) {
+            lruList.erase(cacheMap[cacheKey].second);
+            lruList.push_front(cacheKey);
+            cacheMap[cacheKey].second = lruList.begin();
+            return cacheMap[cacheKey].first; 
         }
     }
 
@@ -632,16 +635,22 @@ vector<SearchResult> SearchEngine::searchAPI(const string& query) {
 
 
     // -------- RESULT GENERATION --------
+    // -------- RESULT GENERATION --------
+    
+    // NEW: Define Min-Heap
+    auto cmp = [](const SearchResult& a, const SearchResult& b) {
+        return a.score > b.score; 
+    };
+    priority_queue<SearchResult, vector<SearchResult>, decltype(cmp)> minHeap(cmp);
+    int maxHeapSize = page * limit;
+
     for (int docID : candidateDocs){
 
         SearchResult res;
         res.document = documents[docID];
         res.suggestion = suggestedWord;
 
-
         string& content = documentContents[docID];
-
-
 
         double bm25Score = 0.0;
         int N = documents.size();
@@ -653,92 +662,40 @@ vector<SearchResult> SearchEngine::searchAPI(const string& query) {
 
             auto& posting = invertedIndex[term].at(docID);
             int tf = posting.frequency;
-
             int df = invertedIndex[term].size();
             int docLen = documentLength[docID];
 
-            bm25Score += computeBM25(
-                tf,
-                df,
-                docLen,
-                N,
-                avgDocLength
-            );
+            bm25Score += computeBM25(tf, df, docLen, N, avgDocLength);
         }
 
         res.score = bm25Score;
 
-
-
         if(terms.size() >= 2){
-
             auto& p1 = invertedIndex[terms[0]].at(docID);
             auto& p2 = invertedIndex[terms[1]].at(docID);
-
             vector<int> phrasePositions;
 
-            int phraseFreq = countPhraseOccurrences(
-                p1.positions,
-                p2.positions,
-                phrasePositions
-            );
-
+            int phraseFreq = countPhraseOccurrences(p1.positions, p2.positions, phrasePositions);
             if(phraseFreq > 0){
                 res.score += 1.5 * phraseFreq;   // phrase boost
             }
         }
 
-
-
         if(terms.size() >= 2){
-
             auto& p1 = invertedIndex[terms[0]].at(docID);
             auto& p2 = invertedIndex[terms[1]].at(docID);
-
             vector<int> proxPositions;
 
-            int proxFreq = countProximityMatches(
-                p1.positions,
-                p2.positions,
-                3,
-                proxPositions
-            );
-
+            int proxFreq = countProximityMatches(p1.positions, p2.positions, 3, proxPositions);
             if(proxFreq > 0){
                 res.score += 0.75 * proxFreq;   // proximity boost
             }
         }
 
-
-
-
-        // ================= SINGLE WORD =================
-        if (terms.size() == 1) {
-
-            auto& posting = invertedIndex[terms[0]][docID];
-            res.frequency = posting.frequency;
-
-            if (!posting.positions.empty()) {
-
-                int idx = 0;
-                long long offset = posting.offsets[idx];
-
-                int start = max(0LL, offset - 60);
-                int end = min((long long)content.size(), offset + 100);
-
-                res.snippet = content.substr(start, end - start);
-            }
-
-            results.push_back(res);
-            continue;
-        }
-
         auto& posting = invertedIndex[terms[0]][docID];
-
         res.frequency = posting.frequency;
 
         if (!posting.positions.empty()) {
-
             int idx = 0;
             long long offset = posting.offsets[idx];
 
@@ -748,20 +705,36 @@ vector<SearchResult> SearchEngine::searchAPI(const string& query) {
             res.snippet = content.substr(start, end - start);
         }
 
-
-        results.push_back(res);
+        // NEW: Push to heap instead of pushing to vector directly
+        minHeap.push(res);
+        if (minHeap.size() > maxHeapSize) {
+            minHeap.pop(); 
+        }
     }
 
-    sort(results.begin(), results.end(),
-    [](const SearchResult& a, const SearchResult& b) {
-        return a.score > b.score;
-    });
+    // NEW: Clear initial vector and extract target page
+    results.clear(); 
+    int startIndex = (page - 1) * limit;
 
+    if (minHeap.size() > startIndex) {
+        vector<SearchResult> tempResults;
+        while (!minHeap.empty()) {
+            tempResults.push_back(minHeap.top());
+            minHeap.pop();
+        }
+        
+        // Reverse to get highest scores first
+        reverse(tempResults.begin(), tempResults.end());
 
-    
+        int endIndex = min((int)tempResults.size(), startIndex + limit);
+        for (int i = startIndex; i < endIndex; i++) {
+            results.push_back(tempResults[i]);
+        }
+    }
 
+    // 2. STORE RESULT IN CACHE BEFORE RETURNING
     {
-        lock_guard<mutex> lock(cacheMutex); // Lock only during cache insertion
+        lock_guard<mutex> lock(cacheMutex); 
         
         // Evict the oldest query if we hit capacity
         if (cacheMap.size() >= cacheCapacity) {
@@ -771,13 +744,14 @@ vector<SearchResult> SearchEngine::searchAPI(const string& query) {
         }
         
         // Insert new query at the front
-        lruList.push_front(query);
-        cacheMap[query] = {results, lruList.begin()};
+        lruList.push_front(cacheKey);
+        cacheMap[cacheKey] = {results, lruList.begin()};
     }
-
 
     return results;
 }
+
+
 
 // ---------------- AUTOCOMPLETE ----------------
 vector<string> SearchEngine::autocompleteAPI(const string& prefix) {
