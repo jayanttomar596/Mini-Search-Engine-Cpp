@@ -11,6 +11,11 @@
 #include <queue>
 #include <filesystem>
 #include <chrono>
+#define CPPHTTPLIB_OPENSSL_SUPPORT // UST be defined before httplib.h
+#include "httplib.h"
+#include "json.hpp" // nlohmann/json
+
+using json = nlohmann::json;
 namespace fs = std::filesystem;
 using namespace std;
 
@@ -29,6 +34,42 @@ int SearchEngine::getVocabularySize() const {
 
 
 
+// ---------------- COSINE SIMILARITY ----------------
+double SearchEngine::cosineSimilarity(const vector<float>& A, const vector<float>& B) {
+    if (A.empty() || B.empty() || A.size() != B.size()) return 0.0;
+    
+    double dotProduct = 0.0, normA = 0.0, normB = 0.0;
+    for (size_t i = 0; i < A.size(); ++i) {
+        dotProduct += A[i] * B[i];
+        normA += A[i] * A[i];
+        normB += B[i] * B[i];
+    }
+    
+    if (normA == 0.0 || normB == 0.0) return 0.0;
+    return dotProduct / (sqrt(normA) * sqrt(normB));
+}
+
+// ---------------- OLLAMA LOCAL API CALL ----------------
+vector<float> SearchEngine::getOpenAIEmbedding(const string& text) {
+    // Calling your LOCAL machine, not the internet!
+    httplib::Client cli("http://localhost:11434"); 
+
+    json req_body = {
+        {"model", "nomic-embed-text"},
+        {"prompt", text}
+    };
+
+    // No API key or Bearer Token required!
+    auto res = cli.Post("/api/embeddings", req_body.dump(), "application/json");
+
+    if (res && res->status == 200) {
+        json res_json = json::parse(res->body);
+        return res_json["embedding"].get<vector<float>>();
+    }
+    
+    cout << "Failed to fetch embedding from local Ollama. Is the Ollama app running?\n";
+    return {};
+}
 
 
 // ---------------- EDIT DISTANCE (LEVENSHTEIN) ----------------
@@ -628,89 +669,84 @@ vector<SearchResult> SearchEngine::searchAPI(const string& query, int page, int 
 
     vector<int> candidateDocs;
 
-    for (auto& [docID, count] : docPresence) {
-        if (count == terms.size())   // ✔ must contain all terms
-            candidateDocs.push_back(docID);
+    // 🔥 NEW: Fetch the vector for the user's search query
+    vector<float> queryVector = getOpenAIEmbedding(query);
+
+    // 🔥 NEW: Instead of candidateDocs, we score ALL documents in the corpus
+    // so we can find semantic matches even if there are 0 exact word matches!
+    vector<int> allDocs;
+    for (int i = 0; i < documents.size(); i++) {
+        allDocs.push_back(i);
     }
 
-
-    // -------- RESULT GENERATION --------
-    // -------- RESULT GENERATION --------
-    
-    // NEW: Define Min-Heap
     auto cmp = [](const SearchResult& a, const SearchResult& b) {
         return a.score > b.score; 
     };
     priority_queue<SearchResult, vector<SearchResult>, decltype(cmp)> minHeap(cmp);
     int maxHeapSize = page * limit;
 
-    for (int docID : candidateDocs){
+    // -------- RESULT GENERATION --------
+    for (int docID : allDocs) {
 
         SearchResult res;
         res.document = documents[docID];
         res.suggestion = suggestedWord;
-
         string& content = documentContents[docID];
 
+        // 1. Calculate BM25 (Lexical Score) exactly as before
         double bm25Score = 0.0;
         int N = documents.size();
 
-        for(const string& term : terms){
-
-            if(invertedIndex[term].find(docID) == invertedIndex[term].end())
-                continue;
-
-            auto& posting = invertedIndex[term].at(docID);
-            int tf = posting.frequency;
-            int df = invertedIndex[term].size();
-            int docLen = documentLength[docID];
-
-            bm25Score += computeBM25(tf, df, docLen, N, avgDocLength);
-        }
-
-        res.score = bm25Score;
-
-        if(terms.size() >= 2){
-            auto& p1 = invertedIndex[terms[0]].at(docID);
-            auto& p2 = invertedIndex[terms[1]].at(docID);
-            vector<int> phrasePositions;
-
-            int phraseFreq = countPhraseOccurrences(p1.positions, p2.positions, phrasePositions);
-            if(phraseFreq > 0){
-                res.score += 1.5 * phraseFreq;   // phrase boost
+        for(const string& term : terms) {
+            if(invertedIndex[term].find(docID) != invertedIndex[term].end()) {
+                auto& posting = invertedIndex[term].at(docID);
+                bm25Score += computeBM25(posting.frequency, invertedIndex[term].size(), documentLength[docID], N, avgDocLength);
             }
         }
 
-        if(terms.size() >= 2){
-            auto& p1 = invertedIndex[terms[0]].at(docID);
-            auto& p2 = invertedIndex[terms[1]].at(docID);
-            vector<int> proxPositions;
+        // [Keep your existing Phrase & Proximity boosts here if desired, 
+        // just ensure you check if terms exist in the doc first]
 
-            int proxFreq = countProximityMatches(p1.positions, p2.positions, 3, proxPositions);
-            if(proxFreq > 0){
-                res.score += 0.75 * proxFreq;   // proximity boost
+        // 2. NEW: Calculate Semantic Score (Vector Math)
+        double semanticScore = 0.0;
+        if (!queryVector.empty() && documentEmbeddings.find(docID) != documentEmbeddings.end()) {
+            semanticScore = cosineSimilarity(queryVector, documentEmbeddings[docID]);
+        }
+
+        // 3. NEW: HYBRID COMBINATION
+        // BM25 usually ranges from 0 to 20+, Cosine Similarity is 0 to 1.
+        // We multiply the semantic score by 10 to give it weight alongside BM25.
+        res.score = bm25Score + (semanticScore * 10.0);
+
+        // Skip if score is 0 (no keyword match AND no semantic match)
+        if (res.score <= 0.0) continue;
+
+        // 4.  NEW: Safe Snippet Generation (Accounts for pure semantic matches)
+        if (!terms.empty() && invertedIndex.find(terms[0]) != invertedIndex.end() && invertedIndex[terms[0]].find(docID) != invertedIndex[terms[0]].end()) 
+        {
+            auto& posting = invertedIndex[terms[0]][docID];
+            res.frequency = posting.frequency;
+            if (!posting.positions.empty()) {
+                long long offset = posting.offsets[0];
+                int start = max(0LL, offset - 60);
+                int end = min((long long)content.size(), offset + 100);
+                res.snippet = content.substr(start, end - start);
             }
+        } 
+        else 
+        {
+            // Semantic match fallback snippet (shows the beginning of the document)
+            res.frequency = 0;
+            res.snippet = content.substr(0, min((int)content.size(), 150)) + "...";
         }
 
-        auto& posting = invertedIndex[terms[0]][docID];
-        res.frequency = posting.frequency;
-
-        if (!posting.positions.empty()) {
-            int idx = 0;
-            long long offset = posting.offsets[idx];
-
-            int start = max(0LL, offset - 60);
-            int end = min((long long)content.size(), offset + 100);
-
-            res.snippet = content.substr(start, end - start);
-        }
-
-        // NEW: Push to heap instead of pushing to vector directly
         minHeap.push(res);
         if (minHeap.size() > maxHeapSize) {
             minHeap.pop(); 
         }
     }
+
+    // ... [Keep your existing heap extraction and LRU caching logic here exactly as before] ...
 
     // NEW: Clear initial vector and extract target page
     results.clear(); 
@@ -904,6 +940,9 @@ void SearchEngine::indexSingleDocument(const string& path) {
     string content = buffer.str();
 
     documentContents[docID] = content;
+
+    cout << "Fetching OpenAI Vector for: " << path << "...\n";
+    documentEmbeddings[docID] = getOpenAIEmbedding(content);
 
     indexDocument(docID, content);
 

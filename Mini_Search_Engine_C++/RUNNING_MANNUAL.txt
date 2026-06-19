@@ -6,7 +6,7 @@ HOW TO RUN (FOLLOW EXACTLY)
 
 cd Mini_Search_Engine_C++
 cd backend
-g++ -std=c++20 server.cpp src/SearchEngine.cpp src/Trie.cpp -I include -o server
+g++ -std=c++17 server.cpp src/SearchEngine.cpp src/Trie.cpp -I./include -I/opt/homebrew/opt/openssl@3/include -L/opt/homebrew/opt/openssl@3/lib -o server -lssl -lcrypto -pthread
 ./server
 
 

@@ -59,6 +59,8 @@ private:
     double avgDocLength = 0.0;
 
     unordered_map<string, unordered_map<int, Posting>> invertedIndex;
+    // NEW: Store the Semantic Vector for each document
+    unordered_map<int, vector<float>> documentEmbeddings;
     Trie trie;
     unordered_map<int, string> documentContents; // New Addition to show snippets 
     bool usingSample = false;
@@ -74,6 +76,9 @@ private:
     void invalidateCache();  // Helper to clear cache when corpus changes
 
     void indexDocument(int docID, const string& content);
+
+    vector<float> getOpenAIEmbedding(const string& text);
+    double cosineSimilarity(const vector<float>& A, const vector<float>& B);
 
 
     // 🔥 NEW: Thread-safe local indexing helper
