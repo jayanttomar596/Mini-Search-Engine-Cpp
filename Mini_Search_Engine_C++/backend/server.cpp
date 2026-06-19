@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>   
+#include <cstdlib>
 #include<filesystem>
 namespace fs = std::filesystem;
 
@@ -75,6 +76,14 @@ int main() {
     fs::create_directory("../runtime_corpus");
 
 
+    server.Options("/upload", [&](const httplib::Request& req, httplib::Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        res.status = 200; // Tell the browser "Yes, you are allowed to send the POST request!"
+    });
+
+
 // -------- Upload Endpoint --------
     server.Post("/upload", [&](const httplib::Request& req,
                             httplib::Response& res) {
@@ -92,36 +101,59 @@ int main() {
         }
 
         string docName = req.get_param_value("filename");
-
         string baseName = docName;
-        string savePath = "../runtime_corpus/" + baseName;
 
+        // FIX: Calculate name and extension HERE, outside the loop!
+        size_t dotPos = baseName.find_last_of('.');
+        string name = baseName;
+        string extension = "";
+
+        if (dotPos != string::npos) {
+            name = baseName.substr(0, dotPos);
+            // Convert extension to lowercase to safely handle ".PDF" vs ".pdf"
+            string extRaw = baseName.substr(dotPos);
+            for(char c : extRaw) extension += tolower(c); 
+        }
+
+        string savePath = "../runtime_corpus/" + baseName;
         int counter = 1;
 
+        // Loop to handle duplicate filenames
         while (fs::exists(savePath)) {
-
-            size_t dotPos = baseName.find_last_of('.');
-            string name = baseName;
-            string extension = "";
-
-            if (dotPos != string::npos) {
-                name = baseName.substr(0, dotPos);
-                extension = baseName.substr(dotPos);
-            }
-
-            savePath = "../runtime_corpus/" +
-                    name + "_" + to_string(counter) + extension;
-
+            savePath = "../runtime_corpus/" + name + "_" + to_string(counter) + extension;
             counter++;
         }
 
-        ofstream out(savePath);
-        out << req.body;
+        // NEW: Add ios::binary flag so PDF bytes aren't scrambled on save
+        ofstream out(savePath, ios::binary);
+        out.write(req.body.data(), req.body.size()); // Much safer for binary PDFs
         out.close();
 
-        engine.indexSingleDocument(savePath);
+        string fileToIndex = savePath;
 
-        // 🔥 Back to plain text
+        // NEW: PDF Processing Logic
+        if (extension == ".pdf") {
+            // Define where the extracted text will be saved
+            string txtPath = "../runtime_corpus/" + name + "_" + to_string(counter) + ".txt";
+
+            // Construct shell command: pdftotext "input.pdf" "output.txt"
+            string command = "pdftotext \"" + savePath + "\" \"" + txtPath + "\"";
+            
+            // Execute command
+            int result = std::system(command.c_str());
+
+            if (result != 0) {
+                res.set_content("Failed to parse PDF. Is 'poppler-utils' installed?", "text/plain");
+                return;
+            }
+
+            // Tell the engine to index the extracted text file, NOT the binary PDF
+            fileToIndex = txtPath;
+        }
+
+        // Send the correct file to the engine
+        engine.indexSingleDocument(fileToIndex);
+
         res.set_content("File uploaded and indexed successfully!", "text/plain");
     });
 

@@ -3,6 +3,8 @@ const output = document.getElementById("output");
 const suggestions = document.getElementById("suggestions");
 const uploadStatus = document.getElementById("uploadStatus");
 
+
+
 // ========================
 // 🔹 Upload file
 // ========================
@@ -19,12 +21,17 @@ function uploadFile() {
   const reader = new FileReader();
 
   reader.onload = function (e) {
+    // NEW: Show a loading message (PDF extraction takes a moment)
+    uploadStatus.innerText = "Uploading and processing... please wait.";
+    uploadStatus.style.color = "#facc15"; // Yellow color
+
     fetch("http://localhost:8080/upload?filename=" + encodeURIComponent(file.name), {
       method: "POST",
       headers: {
-        "Content-Type": "text/plain"
+        // NEW: Dynamically set Content-Type
+        "Content-Type": file.name.endsWith(".pdf") ? "application/pdf" : "text/plain"
       },
-      body: e.target.result
+      body: e.target.result // Sends the raw binary array buffer
     })
     .then(res => {
       if (!res.ok) {
@@ -34,7 +41,8 @@ function uploadFile() {
     })
     .then(msg => {
       uploadStatus.innerText = msg;
-      uploadStatus.style.color = "#22c55e";
+      // If the backend sends an error string about poppler, turn it red
+      uploadStatus.style.color = msg.includes("Failed") ? "red" : "#22c55e";
 
       fileInput.value = "";
       updateCorpusInfo();
@@ -51,7 +59,8 @@ function uploadFile() {
     uploadStatus.style.color = "red";
   };
 
-  reader.readAsText(file);
+  // NEW: Read as ArrayBuffer so PDF bytes are not corrupted!
+  reader.readAsArrayBuffer(file);
 }
 
 
