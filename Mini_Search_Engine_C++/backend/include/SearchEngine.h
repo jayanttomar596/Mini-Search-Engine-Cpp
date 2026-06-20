@@ -43,6 +43,8 @@ public:
     void buildIndex();
     void loadSampleDataset();
     void clearIndex();
+    void saveIndex(const string& filepath);
+    bool loadIndex(const string& filepath);
 
 
     vector<SearchResult> searchAPI(const string& query, int page = 1, int limit = 10);
@@ -50,6 +52,8 @@ public:
 
     double getLastIndexingTime() const;
     int getLastThreadCount() const;
+    // Garbage Collection for orphan files
+    void cleanupOrphanFiles();
 
 private:
     vector<string> documents;

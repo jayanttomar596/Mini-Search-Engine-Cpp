@@ -69,11 +69,31 @@ string toJson(const vector<SearchResult>& results) {
 int main() {
     SearchEngine engine;
     httplib::Server server;
-    
 
-    // STEP 1: Initialize runtime_corpus folder
-    fs::remove_all("../runtime_corpus");
+    // STEP 1: Initialize folders (Create them if they don't exist)
     fs::create_directory("../runtime_corpus");
+    fs::create_directory("../database");
+
+    // STEP 2: Try to load the index from the database folder
+    string indexPath = "../database/search_index.bin";
+    
+    if (fs::exists(indexPath)) {
+        cout << "Found existing index. Loading via mmap..." << endl;
+        engine.loadIndex(indexPath);
+        
+        // NEW: Delete any files that were uploaded but never saved!
+        engine.cleanupOrphanFiles(); 
+        
+    } else {
+        cout << "No existing index found. Starting fresh." << endl;
+        
+        // NEW: If there is no index at all, everything in runtime_corpus is an orphan. Wipe it!
+        for (const auto& entry : fs::directory_iterator("../runtime_corpus")) {
+            if (entry.is_regular_file()) {
+                fs::remove(entry.path());
+            }
+        }
+    }
 
 
     server.Options("/upload", [&](const httplib::Request& req, httplib::Response& res) {
@@ -254,25 +274,34 @@ int main() {
     });
 
 
+    
+
     // -------- Clear Corpus --------
-    server.Post("/clearCorpus", [&](const httplib::Request& req,
-                                httplib::Response& res) {
+    server.Post("/clearCorpus", [&](const httplib::Request& req, httplib::Response& res) {
 
         namespace fs = std::filesystem;
 
-        // 1. Clear in-memory index
+        // 1. Clear the live in-memory index
         engine.clearIndex();
 
-        // 2. Delete all runtime uploaded files
+        // 2. Delete all raw uploaded files (The Bookshelf)
         for (const auto& entry : fs::directory_iterator("../runtime_corpus")) {
             if (entry.is_regular_file()) {
                 fs::remove(entry.path());
             }
         }
 
+        // 3. NEW: Delete the binary index file on disk (The Card Catalog)
+        string indexPath = "../database/search_index.bin";
+        if (fs::exists(indexPath)) {
+            fs::remove(indexPath);
+        }
+
         res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_content("Corpus cleared successfully", "text/plain");
+        res.set_content("Corpus and Index cleared successfully", "text/plain");
     });
+
+
 
 
     // -------- Rebuild Index --------
@@ -364,6 +393,27 @@ int main() {
     });
 
 
+
+    // -------- Save Index Endpoint --------
+    server.Post("/saveIndex", [&](const httplib::Request& req, httplib::Response& res) {
+        // NEW: Save to the dedicated database folder
+        engine.saveIndex("../database/search_index.bin");
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_content("Index successfully saved to disk!", "text/plain");
+    });
+
+
     cout << "Dynamic Search Engine running at http://localhost:8080\n";
     server.listen("localhost", 8080);
 }
+
+
+
+
+
+
+
+
+
+
+

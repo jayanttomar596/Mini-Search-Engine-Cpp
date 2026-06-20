@@ -10,10 +10,15 @@
 #include <algorithm>
 #include <queue>
 #include <filesystem>
+#include <unordered_set>
 #include <chrono>
 #define CPPHTTPLIB_OPENSSL_SUPPORT // UST be defined before httplib.h
 #include "httplib.h"
 #include "json.hpp" // nlohmann/json
+#include <fcntl.h>      // For file control (open)
+#include <sys/mman.h>   // For memory mapping (mmap)
+#include <sys/stat.h>   // For file size (fstat)
+#include <unistd.h>     // For close()
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
@@ -957,6 +962,182 @@ void SearchEngine::indexSingleDocument(const string& path) {
     // Insert words into Trie
     for (auto& [word, _] : invertedIndex)
         trie.insert(word);
+}
+
+
+
+
+
+
+
+
+
+// ---------------- SAVE INDEX TO DISK (BINARY) ----------------
+void SearchEngine::saveIndex(const string& filepath) {
+    lock_guard<mutex> lock(cacheMutex); // Lock to ensure no reads happen while saving
+    
+    ofstream out(filepath, ios::binary);
+    if (!out) {
+        cout << "Failed to open file for saving: " << filepath << endl;
+        return;
+    }
+
+    // 1. Save average document length
+    out.write((char*)&avgDocLength, sizeof(avgDocLength));
+
+    // 2. Save Documents Array
+    size_t docCount = documents.size();
+    out.write((char*)&docCount, sizeof(docCount));
+    for (const string& doc : documents) {
+        size_t len = doc.size();
+        out.write((char*)&len, sizeof(len));
+        out.write(doc.c_str(), len);
+    }
+
+    // 3. Save Document Lengths
+    size_t dlSize = documentLength.size();
+    out.write((char*)&dlSize, sizeof(dlSize));
+    for (const auto& [docID, len] : documentLength) {
+        out.write((char*)&docID, sizeof(docID));
+        out.write((char*)&len, sizeof(len));
+    }
+
+    // 4. Save Inverted Index
+    size_t vocabSize = invertedIndex.size();
+    out.write((char*)&vocabSize, sizeof(vocabSize));
+    for (const auto& [word, postingMap] : invertedIndex) {
+        // Write word
+        size_t wordLen = word.size();
+        out.write((char*)&wordLen, sizeof(wordLen));
+        out.write(word.c_str(), wordLen);
+
+        // Write posting map
+        size_t mapSize = postingMap.size();
+        out.write((char*)&mapSize, sizeof(mapSize));
+        for (const auto& [docID, posting] : postingMap) {
+            out.write((char*)&docID, sizeof(docID));
+            out.write((char*)&posting.frequency, sizeof(posting.frequency));
+            
+            size_t posSize = posting.positions.size();
+            out.write((char*)&posSize, sizeof(posSize));
+            out.write((char*)posting.positions.data(), posSize * sizeof(int));
+
+            size_t offSize = posting.offsets.size();
+            out.write((char*)&offSize, sizeof(offSize));
+            out.write((char*)posting.offsets.data(), offSize * sizeof(long long));
+        }
+    }
+
+    out.close();
+    cout << "Index successfully saved to " << filepath << endl;
+}
+
+
+
+
+
+
+
+
+// ---------------- LOAD INDEX FROM DISK (MMAP) ----------------
+bool SearchEngine::loadIndex(const string& filepath) {
+    invalidateCache();
+
+    int fd = open(filepath.c_str(), O_RDONLY);
+    if (fd < 0) return false;
+
+    // Get exact file size
+    struct stat sb;
+    if (fstat(fd, &sb) < 0) { close(fd); return false; }
+
+    if (sb.st_size == 0) { close(fd); return false; }
+
+    // 🔥 MEMORY MAP THE FILE DIRECTLY TO RAM
+    char* map = (char*)mmap(nullptr, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (map == MAP_FAILED) { close(fd); return false; }
+
+    char* ptr = map; // Pointer to traverse the mapped memory
+
+    clearIndex();
+
+    // 1. Read avgDocLength
+    avgDocLength = *(double*)ptr; ptr += sizeof(double);
+
+    // 2. Read Documents Array
+    size_t docCount = *(size_t*)ptr; ptr += sizeof(size_t);
+    for (size_t i = 0; i < docCount; i++) {
+        size_t len = *(size_t*)ptr; ptr += sizeof(size_t);
+        documents.push_back(string(ptr, len));
+        ptr += len;
+    }
+
+    // 3. Read Document Lengths
+    size_t dlSize = *(size_t*)ptr; ptr += sizeof(size_t);
+    for (size_t i = 0; i < dlSize; i++) {
+        int docID = *(int*)ptr; ptr += sizeof(int);
+        int len = *(int*)ptr; ptr += sizeof(int);
+        documentLength[docID] = len;
+    }
+
+    // 4. Read Inverted Index
+    size_t vocabSize = *(size_t*)ptr; ptr += sizeof(size_t);
+    for (size_t i = 0; i < vocabSize; i++) {
+        size_t wordLen = *(size_t*)ptr; ptr += sizeof(size_t);
+        string word(ptr, wordLen);
+        ptr += wordLen;
+
+        trie.insert(word); // Rebuild Trie on the fly
+
+        size_t mapSize = *(size_t*)ptr; ptr += sizeof(size_t);
+        for (size_t j = 0; j < mapSize; j++) {
+            int docID = *(int*)ptr; ptr += sizeof(int);
+            
+            Posting& posting = invertedIndex[word][docID];
+            posting.frequency = *(int*)ptr; ptr += sizeof(int);
+
+            size_t posSize = *(size_t*)ptr; ptr += sizeof(size_t);
+            posting.positions.resize(posSize);
+            memcpy(posting.positions.data(), ptr, posSize * sizeof(int));
+            ptr += posSize * sizeof(int);
+
+            size_t offSize = *(size_t*)ptr; ptr += sizeof(size_t);
+            posting.offsets.resize(offSize);
+            memcpy(posting.offsets.data(), ptr, offSize * sizeof(long long));
+            ptr += offSize * sizeof(long long);
+        }
+    }
+
+    // Clean up memory mapping
+    munmap(map, sb.st_size);
+    close(fd);
+
+    cout << "Index successfully loaded via mmap from " << filepath << endl;
+    return true;
+}
+
+
+
+
+
+// ---------------- GARBAGE COLLECTION ----------------
+void SearchEngine::cleanupOrphanFiles() {
+    namespace fs = std::filesystem;
+    
+    // 1. Put all valid, saved document paths into a fast lookup set
+    unordered_set<string> validFiles(documents.begin(), documents.end());
+
+    // 2. Scan the runtime_corpus folder
+    for (const auto& entry : fs::directory_iterator("../runtime_corpus")) {
+        if (entry.is_regular_file()) {
+            string filePath = entry.path().string();
+            
+            // 3. If the physical file is NOT in our saved index, delete it!
+            if (validFiles.find(filePath) == validFiles.end()) {
+                cout << "Deleting unsaved orphan file: " << filePath << endl;
+                fs::remove(entry.path());
+            }
+        }
+    }
 }
 
 

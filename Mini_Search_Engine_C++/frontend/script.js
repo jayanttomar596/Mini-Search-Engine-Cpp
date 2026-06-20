@@ -214,7 +214,8 @@ input.addEventListener("input", () => {
 
 
 function updateCorpusInfo() {
-  fetch("http://localhost:8080/corpusInfo")
+  // FIX: Append a unique timestamp (?t=...) to completely bypass browser caching
+  fetch("http://localhost:8080/corpusInfo?t=" + new Date().getTime())
     .then(res => res.json())
     .then(data => {
       document.getElementById("corpusStats").innerText =
@@ -293,6 +294,28 @@ function runBenchmark() {
 
 
 window.onload = updateCorpusInfo;
+
+
+
+
+
+
+
+// ========================
+// 🔹 SAVE INDEX TO DISK
+// ========================
+function saveIndexToDisk() {
+  fetch("http://localhost:8080/saveIndex", { method: "POST" })
+    .then(res => res.text())
+    .then(msg => {
+      alert("✅ " + msg); // Pops up a success message on the screen!
+    })
+    .catch(err => {
+      console.error("Error saving index:", err);
+      alert("❌ Failed to save index.");
+    });
+}
+
 
 
 
