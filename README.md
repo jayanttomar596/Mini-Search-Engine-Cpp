@@ -1,4 +1,4 @@
-# Fast Mini Search Engine in C++
+# Fast Hybrid Search Engine in C++
 
 ### Multithreaded Inverted Index • BM25 Ranking • Trie Autocomplete • REST APIs • Web UI
 
@@ -13,7 +13,7 @@ The system is designed with **clean architecture, performance-aware indexing, an
 # Demo
 
 ## Working Video
-https://www.youtube.com/watch?v=cc0ks_HMolY
+https://youtu.be/3sWkehFSbl4
 
 ---
 
