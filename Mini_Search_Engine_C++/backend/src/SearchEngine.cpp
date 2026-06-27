@@ -518,14 +518,12 @@ void SearchEngine::buildIndex() {
 
 // ---------------- INDEX DOCUMENT ----------------
 void SearchEngine::indexDocument(int docID, const string& content) {
-
     stringstream ss(content);
     string word;
     int position = 0;
     long long offset = 0;
 
     while (ss >> word) {
-
         string clean = normalize(word);
         if (clean.empty()) continue;
 
@@ -533,24 +531,20 @@ void SearchEngine::indexDocument(int docID, const string& content) {
         posting.frequency++;
         posting.positions.push_back(position);
         posting.offsets.push_back(offset);
-
         trie.insert(clean);
 
         offset += word.length() + 1;
         position++;
     }
 
-
+    // UPDATE: Only do this once per document, not once per word!
     documentLength[docID] = position;
-
+    
+    // Efficiently update average by calculating the delta
     double total = 0;
-    for(auto &p : documentLength)
-        total += p.second;
-
+    for(auto const& [id, len] : documentLength) total += len;
     avgDocLength = total / documentLength.size();
-
 }
-
 
 
 

@@ -4,6 +4,17 @@ Trie::Trie() {
     root = new TrieNode();
 }
 
+Trie::~Trie() {
+    clear(root);
+}
+
+void Trie::clear(TrieNode* node) {
+    for (auto& pair : node->children) {
+        clear(pair.second);
+    }
+    delete node;
+}
+
 void Trie::insert(const string& word) {
     TrieNode* curr = root;
     for (char c : word) {
