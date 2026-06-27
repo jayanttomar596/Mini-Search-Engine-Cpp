@@ -319,3 +319,63 @@ function saveIndexToDisk() {
 
 
 
+
+
+
+// ========================
+// 🔹 RAG AI Chat (FastAPI)
+// ========================
+const chatInput = document.getElementById("chatInput");
+const chatHistory = document.getElementById("chatHistory");
+
+function appendMessage(text, senderClass) {
+  const msgDiv = document.createElement("div");
+  msgDiv.className = `chat-msg ${senderClass}`;
+  msgDiv.innerText = text;
+  chatHistory.appendChild(msgDiv);
+  chatHistory.scrollTop = chatHistory.scrollHeight; // Auto-scroll to bottom
+  return msgDiv;
+}
+
+function sendChatMessage() {
+  const question = chatInput.value.trim();
+  if (!question) return;
+
+  // 1. Add User message to UI
+  appendMessage(question, "msg-user");
+  chatInput.value = "";
+
+  // 2. Add Loading state
+  const loadingMsg = appendMessage("AI is reading the C++ database...", "msg-ai msg-loading");
+
+  // 3. Hit the Python FastAPI backend
+  fetch("http://localhost:3000/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question: question })
+  })
+  .then(res => {
+    if (!res.ok) throw new Error("AI Backend Error");
+    return res.json();
+  })
+  .then(data => {
+    // Remove loading message and append actual answer
+    chatHistory.removeChild(loadingMsg);
+    appendMessage(data.answer, "msg-ai");
+  })
+  .catch(err => {
+    console.error(err);
+    chatHistory.removeChild(loadingMsg);
+    appendMessage("❌ Failed to connect to Python AI Gateway.", "msg-ai");
+  });
+}
+
+// Allow pressing "Enter" to send
+chatInput.addEventListener("keypress", function(event) {
+  if (event.key === "Enter") {
+    sendChatMessage();
+  }
+});
+
+
+

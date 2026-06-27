@@ -1,0 +1,74 @@
+Jayant Tomar
+
++91-9253320151 | jayanttomar596@gmail.com | Rohtak, Haryana | LinkedIn | GitHub | Portfolio | LeetCode | CodeForces
+
+Education
+Delhi Technological University (DTU), New Delhi, India
+
+CGPA: 9.34
+
+Bachelor of Technology in Computer Science and Engineering
+
+Class 12th CBSE Board
+Class 10th CBSE Board
+
+2024 – 2028
+
+Percentage: 95%
+Percentage: 97.2%
+
+Technical Skills
+Languages: C/C++ (C++17), Python, SQL, HTML, CSS
+Backend & Systems: REST APIs, TCP/IP, WebSockets, Multithreading, POSIX, Vector Search, Ollama
+CS Fundamentals: Data Structures & Algorithms, OOP, Operating Systems, DBMS, Computer Networks, System Design
+Developer Tools: Git/GitHub, Vercel , VS Code, Visual Studio, MySQL, Google Colab, Kaggle, JupyterLab
+
+Projects
+Fast Hybrid Search Engine | C++, BM25, Vector Search, Trie, Multithreading
+GitHub | Video
+– Built a multithreaded C++ Hybrid Search Engine merging exact keyword matching (BM25 Inverted Index) with
+local AI vector embeddings (Ollama) for semantic retrieval.
+– Enhanced search accuracy and latency by implementing Trie-based autocomplete, Levenshtein spell correction, a
+thread-safe LRU query cache, and an Top-K Min-Heap for pagination.
+– Designed and implemented a C++ HTTP backend exposing REST APIs for search, snippets, autocomplete, and
+benchmarking, with CORS preflight handling and PDF binary extraction.
+– Built a hybrid indexing pipeline with incremental ingestion, POSIX mmap persistence, and startup garbage
+collection for zero-latency restarts.
+– Implemented lock-free parallel document indexing using thread-local inverted indexes with post-merge
+aggregation, achieving 2.14× indexing speedup and average search latency (0.75 ms, 1319 queries/sec throughput).
+
+High-Performance In-Memory Key-Value Store | C++, TCP
+GitHub | Video
+– Engineered thread-safe operations using mutex-based synchronization, ensuring data integrity for over 500 concurrent
+clients with sub-millisecond latency (0.305 ms avg, p99 < 0.9ms).
+– Architected hybrid persistence (WAL + snapshot/RDB) enabling crash recovery and fast restart by combining log
+replay with periodic full-state snapshots.
+– Streamlined LRU cache eviction with heap-optimized TTL expiration (O(log n)), replacing full scans , sustaining
+55K TTL writes/sec with only 0.018 ms avg latency..
+– Developed master-slave replication with initial synchronization, where slaves receive snapshot-based state transfer
+followed by real-time command replication for consistency.
+– Achieved 93K+ GET ops/sec and 60K+ SET ops/sec while integrating graceful shutdown and structured logging, and a
+zero-dependency WebSocket-to-TCP proxy bridge for real-time visual telemetry and cluster state exploration.
+
+Achievements and Awards
+• Competitive Programming: Knight (1885) at LeetCode, Pupil at Codeforces, and 3-Star at CodeChef.
+• Algorithmic Consistency: Solved 650+ DSA problems on LeetCode, maintaining a rigorous 200-day streak.
+• HPAIR Asia Conference 2026: Selected as a global delegate for the Harvard College Project for Asian and
+International Relations (HPAIR) Conference in VinUniversity in Hanoi, Vietnam. - Acceptance Letter
+• Top 12 Finalist: Hack-LLM (24-Hour Hackathon), IIIT Delhi - Certificate
+• Goldman Sachs India Hackathon 2026-CS: Secured All India Rank 1127 - Leaderboard
+• JEE Advanced & Mains 2024: Secured AIR 10,987 in JEE Advanced and 99.27 percentile in JEE Mains.
+
+Leadership & Co-curriculars
+UGV-DTU (Unmanned Ground Vehicle Team)
+Sept 2024 – May 2025
+– Collaborated with the team in testing the ZED 2i camera to evaluate its capabilities against IGVC 2025 requirements.
+
+Certifications
+Stanford Algorithms Specialization
+Kaggle Intermediate ML
+
+Machine Learning Specialization (Andrew Ng)
+Kaggle Intro to ML
+
+
