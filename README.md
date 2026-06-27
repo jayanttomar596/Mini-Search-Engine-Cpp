@@ -24,7 +24,7 @@ https://youtu.be/3sWkehFSbl4
 - Implements **BM25 ranking algorithm**
 - Supports **multi-word queries**
 
-# Enterprise RAG Search Engine
+## Enterprise RAG Search Engine
 
 A high-performance, containerized Retrieval-Augmented Generation (RAG) system built with a decoupled microservices architecture. 
 
