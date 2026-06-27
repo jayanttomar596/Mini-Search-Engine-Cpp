@@ -24,6 +24,34 @@ https://youtu.be/3sWkehFSbl4
 - Implements **BM25 ranking algorithm**
 - Supports **multi-word queries**
 
+# Enterprise RAG Search Engine
+
+A high-performance, containerized Retrieval-Augmented Generation (RAG) system built with a decoupled microservices architecture. 
+
+This project bridges the gap between low-level systems programming and modern AI orchestration. It features a custom-built C++ search engine for high-speed lexical retrieval, paired with a Python FastAPI gateway for context-aware LLM generation and semantic caching.
+
+## Architecture
+The system is divided into three isolated Docker containers:
+1. **The Data Engine (C++):** A custom search backend featuring an Inverted Index, BM25 scoring, a Trie for autocomplete, and POSIX `mmap` for zero-copy file reads.
+2. **The AI Gateway (Python/FastAPI):** A middleware orchestrator that handles cross-origin requests, constructs LangChain prompts, and manages an LRU Semantic Cache.
+3. **The LLM (Ollama):** Hosts `llama3` for natural language generation and `nomic-embed-text` for vector math.
+
+## Key Features
+* **Microservices Design:** Total separation of concerns between data retrieval (Port 8080) and AI inference (Port 3000).
+* **Semantic Caching:** Implements an LRU bounding cache (`collections.deque`) using cosine similarity on vector embeddings to bypass redundant LLM calls, drastically reducing latency.
+* **Memory Safety:** Optimized C++ destructors and $O(1)$ length calculations prevent memory leaks during high-throughput indexing.
+* **Infrastructure as Code:** Fully containerized via `docker-compose` for guaranteed cross-platform reproducibility.
+
+## Quick Start (One-Click Deploy)
+Ensure you have Docker Desktop installed, then run:
+```bash
+docker compose up --build
+```
+Frontend: http://localhost:8080/ (or open index.html)
+AI API Gateway: http://localhost:3000/docs
+
+
+
 ## Intelligent Ranking Signals
 Search relevance is improved using:
 - **BM25 scoring**
