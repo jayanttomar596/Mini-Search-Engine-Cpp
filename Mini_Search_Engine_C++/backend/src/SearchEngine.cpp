@@ -537,12 +537,13 @@ void SearchEngine::indexDocument(int docID, const string& content) {
         position++;
     }
 
-    // UPDATE: Only do this once per document, not once per word!
     documentLength[docID] = position;
     
     // Efficiently update average by calculating the delta
     double total = 0;
-    for(auto const& [id, len] : documentLength) total += len;
+    for(auto &p : documentLength)
+        total += p.second;
+    
     avgDocLength = total / documentLength.size();
 }
 

@@ -18,14 +18,12 @@ public:
 class Trie {
 public:
     Trie();
-    ~Trie();
     void insert(const string& word);
     vector<string> autocomplete(const string& prefix);
 
 private:
     TrieNode* root;
     void dfs(TrieNode* node, string current, vector<string>& results);
-    void clear(TrieNode* node);
 };
 
 #endif
